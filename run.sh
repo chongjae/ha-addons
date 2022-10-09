@@ -1,37 +1,30 @@
 #!/bin/sh
 
-JS_FILE="bestin_rs485.js"
 CONFIG_PATH=/data/options.json
-RESET=$(jq --raw-output ".reset" $CONFIG_PATH)
-SHARE_DIR=/share/bestin
+SHARE_DIR=/share
 
-if [ ! -f $SHARE_DIR/$JS_FILE -o "$RESET" = true ]; then
-	echo "[Info] Initializing "$JS_FILE
+CUSTOM_FILE=$(jq --raw-output ".customfile" $CONFIG_PATH)
+MODEL=$(jq --raw-output ".model" $CONFIG_PATH)
+TYPE=$(jq --raw-output ".type" $CONFIG_PATH)
+JS_FILE=$MODEL"_"$TYPE"_wallpad.js"
 
-	SERIALPORT=$(jq --raw-output ".serialport" $CONFIG_PATH)
-	MQTTHOST=$(jq --raw-output ".MQTT.server" $CONFIG_PATH)
-	MQTTUSER=$(jq --raw-output ".MQTT.username" $CONFIG_PATH)
-	MQTTPASSWORD=$(jq --raw-output ".MQTT.password" $CONFIG_PATH)
-
-	sed -i "s|%%SERIALPORT%%|$SERIALPORT|g" /$JS_FILE
-	sed -i "s|%%MQTTHOST%%|$MQTTHOST|g" /$JS_FILE
-	sed -i "s|%%MQTTUSER%%|$MQTTUSER|g" /$JS_FILE
-	sed -i "s|%%MQTTPASSWORD%%|$MQTTPASSWORD|g" /$JS_FILE
-  if [ -f $SHARE_DIR/$JS_FILE ]; then
-	mv $SHARE_DIR/$JS_FILE $SHARE_DIR/$JS_FILE.bak
-  else
-	mkdir $SHARE_DIR
-  fi
-        mv /$JS_FILE $SHARE_DIR
+if [ -f $SHARE_DIR/$CUSTOM_FILE ]; then
+	echo "[Info] Initializing with Custom file: "$CUSTOM_FILE
+	JS_FILE=$CUSTOM_FILE
 else
-	echo "[Info] Skip initializing "$JS_FILE
+  	if [ ! -f $SHARE_DIR/$JS_FILE ]; then
+		LS_RESULT=`ls $SHARE_DIR | grep wallpad`
+		if [ $? -eq 0 ]; then
+			rm $SHARE_DIR/*wallpad.js
+		fi
+        cp /js/$MODEL"_"$TYPE".js" $SHARE_DIR/$JS_FILE
+	fi
 fi
 
-JS_FILE=$SHARE_DIR/$JS_FILE
-
 # start server
-echo "[Info] Commax Wallpad Controller stand by..."
+echo "[Info] Wallpad Controller stand by... : "$JS_FILE
 
+JS_FILE=/$SHARE_DIR/$JS_FILE
 node $JS_FILE
 
 #while true; do echo "still live"; sleep 1800; done
