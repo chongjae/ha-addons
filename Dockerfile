@@ -17,6 +17,6 @@ RUN npm install
 
 WORKDIR /share
 
-RUN chmod a+x /run.sh
+RUN chmod a+x /share/bestin/run.sh
 
 CMD [ "/run.sh" ]
