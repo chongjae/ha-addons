@@ -6,7 +6,7 @@ SHARE_DIR=/share
 CUSTOM_FILE=$(jq --raw-output ".customfile" $CONFIG_PATH)
 MODEL=$(jq --raw-output ".model" $CONFIG_PATH)
 TYPE=$(jq --raw-output ".type" $CONFIG_PATH)
-JS_FILE=$MODEL"_"$TYPE"_wallpad.js"
+JS_FILE=$MODEL"_"$TYPE"
 
 if [ -f $SHARE_DIR/$CUSTOM_FILE ]; then
 	echo "[Info] Initializing with Custom file: "$CUSTOM_FILE
