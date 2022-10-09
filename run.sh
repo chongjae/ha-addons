@@ -1,16 +1,28 @@
-#!/bin/sh
-
-SHARE_DIR=/share/bestin
-
-if [ ! -f $SHARE_DIR/bestin.js ]; then
-	mkdir $SHARE_DIR
-	mv /bestin.js $SHARE_DIR
-fi
-/makeconf.sh
-
-# start server
-echo "[Info] Run Bestin Wallpad with RS485"
-cd $SHARE_DIR
-node $SHARE_DIR/bestin.js
-
-#while true; do echo "still live"; sleep 1800; done
+#!/bin/sh 
+  
+ JS_FILE="bestin_rs485.js" 
+ CONFIG_PATH=/data/options.json 
+ RESET=$(jq --raw-output ".reset" $CONFIG_PATH) 
+ SHARE_DIR=/share/bestin
+  
+ if [ ! -f $SHARE_DIR/$JS_FILE -o "$RESET" = true ]; then 
+         echo "[Info] Initializing "$JS_FILE 
+	 
+   if [ -f $SHARE_DIR/$JS_FILE ]; then 
+         mv $SHARE_DIR/$JS_FILE $SHARE_DIR/$JS_FILE.bak 
+   else 
+         mkdir $SHARE_DIR 
+   fi 
+         mv /$JS_FILE $SHARE_DIR 
+ else 
+         echo "[Info] Skip initializing "$JS_FILE 
+ fi 
+  
+ JS_FILE=$SHARE_DIR/$JS_FILE 
+  
+ # start server 
+ echo "[Info] Bestin Wallpad stand by... " 
+  
+ node $JS_FILE 
+  
+ #while true; do echo "still live"; sleep 1800; done
