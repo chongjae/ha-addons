@@ -1,7 +1,7 @@
 {
   "name": "Bestin Wallpad RS485",
-  "version": "0.0.1",
-  "slug": "wallpad",
+  "version": "1.0.0",
+  "slug": "bestin_wallpad",
   "description": "베스틴 월패드 node.js 애드온",
   "arch": [
     "armhf",
@@ -50,11 +50,16 @@
     "model":"bestin",
     "portType": "list(serial|socket)",
     "sendDelay": "int",
-    "serial":{
+    "serial_energy":{
       "port": "str?",
       "baudrate": "int?",
       "parity" : "list(none|even|odd)?"
     },
+    "serial_control":{
+      "port": "str?",
+      "baudrate": "int?",
+      "parity" : "list(none|even|odd)?"
+    },    
     "socket_energy" : {
       "ip": "str?",
       "port": "int?"
