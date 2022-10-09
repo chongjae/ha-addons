@@ -4,7 +4,7 @@ FROM alpine
 COPY run.sh bestin.py
 
 # Install requirements for add-on
-RUN npm install mqtt 
+RUN npm install mqtt --save
 RUN npm install serialport
 
 WORKDIR /share
