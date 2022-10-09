@@ -1,8 +1,8 @@
 {
-  "name": "Bestin Wallpad RS485",
-  "version": "1.0.0",
-  "slug": "bestin_wallpad",
-  "description": "베스틴 월패드 node.js 애드온",
+  "name": "Bestin Wallpad with RS485",
+  "version": "2022.10.9",
+  "slug": "bestin_js",
+  "description": "베스틴 월패드용 애드온",
   "arch": [
     "armhf",
     "armv7",
@@ -13,7 +13,7 @@
   "map": [
     "share:rw"
   ],
-  "url": "https://github.com/harwin1/Bestin-RS485",
+  "url": "https://github.com/harwin1/bestin.js",
   "startup": "application",
   "boot": "auto",
   "uart": true,
@@ -47,7 +47,6 @@
     }
   },
   "schema": {
-    "model":"bestin",
     "portType": "list(serial|socket)",
     "sendDelay": "int",
     "serial_energy":{
