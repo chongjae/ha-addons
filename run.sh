@@ -13,16 +13,16 @@ if [ -f $SHARE_DIR/$CUSTOM_FILE ]; then
 	JS_FILE=$CUSTOM_FILE
 else
   	if [ ! -f $SHARE_DIR/$JS_FILE ]; then
-		LS_RESULT=`ls $SHARE_DIR | grep wallpad`
+		LS_RESULT=`ls $SHARE_DIR
 		if [ $? -eq 0 ]; then
-			rm $SHARE_DIR/*wallpad.js
+			rm $SHARE_DIR/
 		fi
         cp /js/$MODEL"_"$TYPE".js" $SHARE_DIR/$JS_FILE
 	fi
 fi
 
 # start server
-echo "[Info] Wallpad Controller stand by... : "$JS_FILE
+echo "[Info] Run Bestin Wallpad with RS485 stand by... : "$JS_FILE
 
 JS_FILE=/$SHARE_DIR/$JS_FILE
 node $JS_FILE
