@@ -15,6 +15,8 @@ WORKDIR /
 COPY package.json /
 RUN npm install
 
+WORKDIR /share
+
 RUN chmod a+x /run.sh
 
 CMD [ "/run.sh" ]
