@@ -5,7 +5,7 @@ FROM $BUILD_FROM
 ENV LANG C.UTF-8
 
 # Copy data for add-on
-COPY run.sh /
+COPY run.sh commax_homegateway.js /
 COPY js /js
 
 # Install requirements for add-on
