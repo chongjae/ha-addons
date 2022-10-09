@@ -3,7 +3,7 @@
 JS_FILE="bestin_rs485.js"
 CONFIG_PATH=/data/options.json
 RESET=$(jq --raw-output ".reset" $CONFIG_PATH)
-SHARE_DIR=/share/bestin
+SHARE_DIR=/share
 
 if [ ! -f $SHARE_DIR/$JS_FILE -o "$RESET" = true ]; then
 	echo "[Info] Initializing "$JS_FILE
