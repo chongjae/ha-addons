@@ -6,19 +6,16 @@ SHARE_DIR=/share
 CUSTOM_FILE=$(jq --raw-output ".customfile" $CONFIG_PATH)
 MODEL=$(jq --raw-output ".model" $CONFIG_PATH)
 TYPE=$(jq --raw-output ".type" $CONFIG_PATH)
-JS_FILE=$MODEL"_"$TYPE"_ipark.js"
+JS_FILE=$MODEL"_"$TYPE"_bestin.js"
 
-if [ -f $SHARE_DIR/$CUSTOM_FILE
-]; then
+if [ -f $SHARE_DIR/$CUSTOM_FILE ]; then
 	echo "[Info] Initializing with Custom file: "$CUSTOM_FILE
 	JS_FILE=$CUSTOM_FILE
 else
-  	if [ ! -f $SHARE_DIR/$JS_FILE
-]; then
-		LS_RESULT=`ls $SHARE_DIR | grep wallpad`
-		if [ $? -eq 0
-]; then
-			rm $SHARE_DIR/*wallpad.js
+  	if [ ! -f $SHARE_DIR/$JS_FILE ]; then
+		LS_RESULT=`ls $SHARE_DIR | grep bestin`
+		if [ $? -eq 0 ]; then
+			rm $SHARE_DIR/*bestin.js
 		fi
         cp /js/$MODEL"_"$TYPE".js" $SHARE_DIR/$JS_FILE
 	fi
