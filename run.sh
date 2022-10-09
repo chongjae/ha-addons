@@ -1,28 +1,24 @@
 #!/bin/sh
 
+JS_FILE="bestin_rs485.js"
 CONFIG_PATH=/data/options.json
 SHARE_DIR=/share
 
-CUSTOM_FILE=$(jq --raw-output ".customfile" $CONFIG_PATH)
-MODEL=$(jq --raw-output ".model" $CONFIG_PATH)
-TYPE=$(jq --raw-output ".type" $CONFIG_PATH)
-JS_FILE=$MODEL"_"$TYPE"_js"
+if [ ! -f $SHARE_DIR/$JS_FILE ]; then
+	echo "[Info] Initializing "$JS_FILE
 
-if [ -f $SHARE_DIR/$CUSTOM_FILE ]; then
-	echo "[Info] Initializing with Custom file: "$CUSTOM_FILE
-	JS_FILE=$CUSTOM_FILE
+if [ -f $SHARE_DIR/$JS_FILE ]; then
+	mv $SHARE_DIR/$JS_FILE
+  else
+	mkdir $SHARE_DIR
+  fi
+    mv /$JS_FILE $SHARE_DIR
 else
-  	if [ ! -f $SHARE_DIR/$JS_FILE ]; then
-		LS_RESULT=`ls $SHARE_DIR
-		if [ $? -eq 0 ]; then
-			rm $SHARE_DIR/*js
-		fi
-        cp /js/$MODEL"_"$TYPE".js" $SHARE_DIR/$JS_FILE
-	fi
+	echo "[Info] Skip initializing "$JS_FILE
 fi
 
 # start server
-echo "[Info] Run Bestin Wallpad with RS485 stand by... : "$JS_FILE
+echo "[Info] Run Bestin Wallpad with RS485 stand by... "
 
 JS_FILE=/$SHARE_DIR/$JS_FILE
 node $JS_FILE
