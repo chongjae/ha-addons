@@ -8,7 +8,7 @@ if [ ! -f $SHARE_DIR/$JS_FILE ]; then
 	echo "[Info] Initializing "$JS_FILE
 
 if [ -f $SHARE_DIR/$JS_FILE ]; then
-	mv $SHARE_DIR/$JS_FILE $SHARE_DIR/$JS_FILE
+	mv $SHARE_DIR/$JS_FILE $SHARE_DIR/$JS_FILE.bak
   else
 	mkdir $SHARE_DIR
   fi
