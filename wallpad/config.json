@@ -44,7 +44,7 @@
     }
   },
   "schema": {
-    "model":"str?",
+    "model":"list",
     "sendDelay": "int",
     "energy_config":{
       "type": "list(serial|socket)",
