@@ -1,26 +1,25 @@
 #!/bin/sh
 
-JS_FILE="bestin_rs485.js"
 CONFIG_PATH=/data/options.json
-RESET=$(jq --raw-output ".reset" $CONFIG_PATH)
-SHARE_DIR=/share/bestin
+SHARE_DIR=/share
 
-if [ ! -f $SHARE_DIR/$JS_FILE -o "$RESET" = true ]; then
-	echo "[Info] Initializing "$JS_FILE
+OPTION_FILE="$(jq --raw-output '.custom_file' $CONFIG_PATH)"
+JS_DIR=/jsfiles
+JS_FILE="bestin_rs485.js"
+DEV_FILE="bestin_rs485.js"
 
-if [ -f $SHARE_DIR/$JS_FILE ]; then
-	mv $SHARE_DIR/$JS_FILE $SHARE_DIR/$JS_FILE.bak
-  else
-	mkdir $SHARE_DIR
-  fi
-    mv /$JS_FILE $SHARE_DIR
-else
-	echo "[Info] Skip initializing "$JS_FILE
+if [ ! -f $SHARE_DIR/$DEV_FILE ]; then
+  cp $JS_DIR/$DEV_FILE $SHARE_DIR/$DEV_FILE
 fi
-JS_FILE=/$SHARE_DIR/$JS_FILE
+if [ -f $SHARE_DIR/$OPTION_FILE ]; then
+  echo "[Info] Initializing with Custom file: "$OPTION_FILE
+  if [ "$DEV_FILE" != "$OPTION_FILE" ]; then
+    rm $SHARE_DIR/$DEV_FILE
+    cp $SHARE_DIR/$OPTION_FILE $SHARE_DIR/$DEV_FILE
+  fi
+fi
 
 # start server
 echo "[Info] Run Bestin Wallpad with RS485 stand by... "
-node $JS_FILE
 
-#while true; do echo "still live"; sleep 1800; done
+node $JS_DIR/$JS_FILE
