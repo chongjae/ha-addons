@@ -1,7 +1,7 @@
 {
   "name": "Bestin Wallpad with RS485",
   "version": "2022.10.9",
-  "slug": "bestin.js",
+  "slug": "bestin_wallpad",
   "description": "베스틴 월패드용 애드온",
   "arch": [
     "armhf",
@@ -44,6 +44,7 @@
     }
   },
   "schema": {
+    "model":"bestin",
     "sendDelay": "int",
     "energy_config":{
       "type": "list(serial|socket)",
