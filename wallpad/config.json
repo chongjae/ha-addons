@@ -44,6 +44,7 @@
     }
   },
   "schema": {
+    "model":"bestin",
     "sendDelay": "int",
     "energy_config":{
       "type": "list(serial|socket)",
