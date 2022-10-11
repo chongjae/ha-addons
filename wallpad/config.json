@@ -18,7 +18,6 @@
   "boot": "auto",
   "uart": true,
   "options": {
-    "model":"bestin",
     "sendDelay": 150,
     "energy_config":{
       "type": "socket",
