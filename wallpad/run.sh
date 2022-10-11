@@ -1,12 +1,12 @@
 #!/bin/sh
 
 CONFIG_PATH=/data/options.json
-SHARE_DIR=/share
+SHARE_DIR=/share/bestin
 
 CUSTOM_FILE=$(jq --raw-output ".customfile" $CONFIG_PATH)
 MODEL=$(jq --raw-output ".model" $CONFIG_PATH)
 TYPE=$(jq --raw-output ".type" $CONFIG_PATH)
-JS_FILE=$MODEL"_"$TYPE"_wallpad.js"
+JS_FILE=/bestin/wallpad.js"
 
 if [ -f $SHARE_DIR/$CUSTOM_FILE ]; then
 	echo "[Info] Initializing with Custom file: "$CUSTOM_FILE
@@ -17,7 +17,7 @@ else
 		if [ $? -eq 0 ]; then
 			rm $SHARE_DIR/*wallpad.js
 		fi
-        cp /js/$MODEL"_"$TYPE".js" $SHARE_DIR/$JS_FILE
+        cp /js/bestin.js $SHARE_DIR/$JS_FILE
 	fi
 fi
 
