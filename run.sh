@@ -5,7 +5,7 @@ SHARE_DIR=/share/bestin
 
 if [ ! -f $SHARE_DIR/ipark.js ]; then
 	mkdir $SHARE_DIR
-	mv /ipark.js $SHARE_DIR
+	mv ipark.js $SHARE_DIR
 fi
 
 # start server
