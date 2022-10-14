@@ -3,7 +3,7 @@
 CONFIG_PATH=/data/options.json
 SHARE_DIR=/share/bestin
 
-if [ i -f $SHARE_DIR/ipark.js ]; then
+if [ ! -f $SHARE_DIR/ipark.js ]; then
 fi
 
 # start server
