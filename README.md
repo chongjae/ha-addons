@@ -3,7 +3,7 @@
 ![Supports aarch64 Architecture][aarch64-shield] ![Supports amd64 Architecture][amd64-shield] ![Supports armhf Architecture][armhf-shield] ![Supports armv7 Architecture][armv7-shield] ![Supports i386 Architecture][i386-shield]
 
 ## About
-HAKoreas님의 저장소를 참고하였습니다. https://github.com/HAKorea/addons.git
+HAKoreas님의 저장소를 참고하였습니다. https://github.com/harwin1/bestin.js.git
 베스틴 월패드를 동작시킬 수 있는 nodejs 서버입니다. 
 커스텀파일 설정이 가능해서 본인이 사용하는 nodejs 파일이 있다면 교체해서 쓰시면 됩니다. 단 config.json의 내용이 js의 설정과 다른경우 호환성을 보장할 수 없음
 
