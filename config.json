@@ -1,7 +1,7 @@
 {
   "name": "Bestin Wallpad with RS485",
   "version": "2022.10.9",
-  "slug": "bestin_wallpad",
+  "slug": "wallpad",
   "description": "베스틴 월패드용 애드온",
   "arch": [
     "armhf",
@@ -18,7 +18,8 @@
   "boot": "auto",
   "uart": true,
   "options": {
-    "sendDelay": 150,
+    "sendDelay": 80,
+    "receiveDelay": 10000
     "energy_config":{
       "type": "socket",
       "serial_port": "/dev/ttyUSB0",
@@ -39,11 +40,11 @@
       "broker": "192.168.0.28",
       "username": "harwin",
       "password": "mosquitto",
-      "receiveDelay": 10000
     }
   },
   "schema": {
     "sendDelay": "int",
+    "receiveDelay": "int"
     "energy_config":{
       "type": "list(serial|socket)",
       "serial_port": "str?",
@@ -64,7 +65,6 @@
       "broker": "str",
       "username": "str",
       "password": "str",
-      "receiveDelay": "int"
     },
     "customfile": "str?"
   }
