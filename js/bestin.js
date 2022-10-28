@@ -44,7 +44,7 @@ const CONST = {
     // SerialPort 전송 Delay(ms)
     sendDelay: CONFIG.sendDelay,
     // MQTT 수신 Delay(ms)
-    mqttDelay: CONFIG.mqtt.mqttDelay,
+    mqttDelay: CONFIG.mqtt.receiveDelay,
     // 메시지 Prefix 상수
     MSG_PREFIX: [0x02],
 
