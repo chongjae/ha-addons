@@ -140,16 +140,17 @@ const CONST = {
 
 아래에 문의 하시면 답변을 구하실 수 있습니다.:
 
-- The [https://github.com/harwin1].
+- The [Home Assistant Korean Community][github].
 - The [Home Assistant 네이버카페][forum].
 
 버그신고는 카페나 깃허브로 해주세요 [open an issue on our GitHub][issue].
 
 [forum]: https://cafe.naver.com/koreassistant
-[github]: https://github.com/HAKorea/addons
-[issue]: https://github.com/zooil/wallpad/issues
+[github]: https://github.com/harwin1/bestin.js
+[issue]: https://github.com/harwin1/bestin.js/issues
 [aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
 [amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
 [armhf-shield]: https://img.shields.io/badge/armhf-yes-green.svg
 [armv7-shield]: https://img.shields.io/badge/armv7-yes-green.svg
 [i386-shield]: https://img.shields.io/badge/i386-yes-green.svg
+
