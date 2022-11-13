@@ -1,0 +1,135 @@
+{
+  "name": "BESTIN Wallpad with RS485",
+  "version": "2022.11.14",
+  "slug": "wallpad",
+  "description": "베스틴 월패드용 애드온",
+  "arch": [
+    "armhf",
+    "armv7",
+    "aarch64",
+    "amd64",
+    "i386"
+  ],
+  "map": [
+    "share:rw"
+  ],
+  "url": "https://github.com/harwin1/bestin.js",
+  "startup": "application",
+  "boot": "auto",
+  "uart": true,
+  "options": {
+    "sendDelay": 80,
+    "receiveDelay": 10000,
+    "energy": {
+      "type": "socket",
+      "header": "Socket",
+      "serial": {
+        "windowPort": "COM?",
+        "rpiPort": "/dev/ttyUSB?",
+        "baudrate": 9600,
+        "bytesize": 8,
+        "parity": "none",
+        "stopbits": 1
+      },
+      "socket": {
+        "addr": "192.168.0.18",
+        "port": 8899
+      }
+    },
+    "control": {
+      "type": "socket",
+      "header": "Socket",
+      "serial": {       
+        "windowPort": "COM?",
+        "rpiPort": "/dev/ttyUSB?",
+        "baudrate": 9600,
+        "bytesize": 8,
+        "parity": "none",
+        "stopbits": 1
+      },
+      "socket": {
+        "addr": "192.168.0.18",
+        "port": 8899
+      }
+    },
+    "smart": {
+      "ennable": "off",
+      "baudrate": 9600,
+      "bytesize": 8,
+      "parity": "none",
+      "stopbits": 1,
+      "serial_recv": {
+        "windowPort": "COM?",
+        "rpiPort": "/dev/ttyUSB?"
+        },
+      "serial_send": {
+        "windowPort": "COM?",
+        "rpiPort": "/dev/ttyUSB?"
+        }
+      },
+    "mqtt": {
+      "broker": "192.168.0.28",
+      "username": "harwin",
+      "password": "mosquitto",
+      "prefix": "homenet"
+    }
+  },
+  "schema": {
+    "sendDelay": "int",
+    "receiveDelay": "int",
+    "energy": {
+      "type": "list(serial|socket)",
+      "header": "list(Serial|Socket)",
+      "serial": {
+        "windowPort": "str?",
+        "rpiPort": "str?",
+        "baudrate": "int?",
+        "bytesize": "int?",
+        "parity": "list(none|even|odd)?",
+        "stopbits": "int?"
+      },
+      "socket": {
+        "addr": "str?",
+        "port": "int?"
+      }
+    },
+    "control":{
+      "type": "list(serial|socket)",
+      "header": "list(Serial|Socket)",
+      "serial": {
+        "windowPort": "str?",
+        "rpiPort": "str?",
+        "baudrate": "int?",
+        "bytesize": "int?",
+        "parity": "list(none|even|odd)?",
+        "stopbits": "int?"
+      },
+      "socket": {
+        "addr": "str?",
+        "port": "int?"
+      }
+    },
+    "smart": {
+      "ennable": "list(on|off)",
+      "baudrate": "int?",
+      "bytesize": "int?",
+      "parity": "list(none|even|odd)?",
+      "stopbits": "int?",
+      "serial_recv": {
+        "windowPort": "str?",
+        "rpiPort": "str?"
+      },
+      "serial_send": {
+        "windowPort": "str?",
+        "rpiPort": "str?"
+      }
+    },    
+    "mqtt": {
+      "broker": "str",
+      "username": "str",
+      "password": "str",
+      "prefix": "str"
+    },
+    "customfile": "str?"
+  }
+}
