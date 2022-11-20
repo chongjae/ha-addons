@@ -1,8 +1,8 @@
 {
-  "name": "Wallpad Controller with RS485",
-  "version": "0.8.7",
+  "name": "BESTIN Wallpad with RS485",
+  "version": "2022.11.20",
   "slug": "wallpad",
-  "description": "코맥스/삼성/대림 월패드가 가능한 nodejs 서버 애드온입니다.",
+  "description": "베스틴 월패드용 애드온",
   "arch": [
     "armhf",
     "armv7",
@@ -13,48 +13,124 @@
   "map": [
     "share:rw"
   ],
-  "url": "https://github.com/HAKorea/addons",
+  "url": "https://github.com/harwin1/bestin.js",
   "startup": "application",
   "boot": "auto",
   "uart": true,
   "options": {
-    "model":"commax",
-    "type": "serial",
-    "sendDelay": 150,
-    "serial":{
-      "port": "/dev/ttyUSB0",
+    "sendDelay": 80,
+    "gapDelay": 30,
+    "energy": {
+      "type": "socket",
+      "header": "Socket",
+      "serial": {
+        "windowPort": "COM?",
+        "rpiPort": "/dev/ttyUSB?",
+        "baudrate": 9600,
+        "bytesize": 8,
+        "parity": "none",
+        "stopbits": 1
+      },
+      "socket": {
+        "addr": "192.168.0.X",
+        "port": 8899
+      }
+    },
+    "control": {
+      "type": "socket",
+      "header": "Socket",
+      "serial": {       
+        "windowPort": "COM?",
+        "rpiPort": "/dev/ttyUSB?",
+        "baudrate": 9600,
+        "bytesize": 8,
+        "parity": "none",
+        "stopbits": 1
+      },
+      "socket": {
+        "addr": "192.168.0.X",
+        "port": 8899
+      }
+    },
+    "smart": {
+      "ennable": "off",
       "baudrate": 9600,
-      "parity" : "none"
-    },
-    "socket" : {
-      "deviceIP": "192.0.0.1",
-      "port": 8899
-    },
+      "bytesize": 8,
+      "parity": "none",
+      "stopbits": 1,
+      "serial_recv": {
+        "windowPort": "COM?",
+        "rpiPort": "/dev/ttyUSB?"
+        },
+      "serial_send": {
+        "windowPort": "COM?",
+        "rpiPort": "/dev/ttyUSB?"
+        }
+      },
     "mqtt": {
-      "server": "192.168.x.x",
-      "username": "id",
-      "password": "pw",
-      "receiveDelay": 10000
+      "broker": "mqtt broker",
+      "username": "name",
+      "password": "passwd",
+      "receiveDelay": 5000,
+      "prefix": "homenet"
     }
   },
   "schema": {
-    "model":"list(commax|samsung|daelim|hyundai)",
-    "type": "list(serial|socket)",
     "sendDelay": "int",
-    "serial":{
-      "port": "str?",
-      "baudrate": "int?",
-      "parity" : "list(none|even|odd)?"
+    "gapDelay": "int",
+    "energy": {
+      "type": "list(serial|socket)",
+      "header": "list(Serial|Socket)",
+      "serial": {
+        "windowPort": "str?",
+        "rpiPort": "str?",
+        "baudrate": "int?",
+        "bytesize": "int?",
+        "parity": "list(none|even|odd)?",
+        "stopbits": "int?"
+      },
+      "socket": {
+        "addr": "str?",
+        "port": "int?"
+      }
     },
-    "socket" : {
-      "deviceIP": "str?",
-      "port": "int?"
+    "control":{
+      "type": "list(serial|socket)",
+      "header": "list(Serial|Socket)",
+      "serial": {
+        "windowPort": "str?",
+        "rpiPort": "str?",
+        "baudrate": "int?",
+        "bytesize": "int?",
+        "parity": "list(none|even|odd)?",
+        "stopbits": "int?"
+      },
+      "socket": {
+        "addr": "str?",
+        "port": "int?"
+      }
+    },
+    "smart": {
+      "ennable": "list(on|off)",
+      "baudrate": "int?",
+      "bytesize": "int?",
+      "parity": "list(none|even|odd)?",
+      "stopbits": "int?",
+      "serial_recv": {
+        "windowPort": "str?",
+        "rpiPort": "str?"
+      },
+      "serial_send": {
+        "windowPort": "str?",
+        "rpiPort": "str?"
+      }
     },    
     "mqtt": {
-      "server": "str",
+      "broker": "str",
       "username": "str",
       "password": "str",
-      "receiveDelay": "int"
+      "receiveDelay": "int",
+      "prefix": "str"
     },
     "customfile": "str?"
   }
