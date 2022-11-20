@@ -15,42 +15,42 @@ const CONFIG = require('/data/options.json');
 
 const energyVar = {
     // 타입 정의
-    type: CONFIG.energy.type, //'socket' , 'serial'
-    header: CONFIG.energy.header, //'Socket' , 'Serial'
+    type: CONFIG.energy_type, //'socket' , 'serial'
+    header: CONFIG.energy_header, //'Socket' , 'Serial'
 
     // 시리얼 설정
-    rate: CONFIG.energy.baudrate,
-    data: CONFIG.energy.bytesize,
-    parity: CONFIG.energy.parity,
-    stop: CONFIG.energy.stopbits,
+    rate: CONFIG.energy_serial.baudrate,
+    data: CONFIG.energy_serial.bytesize,
+    parity: CONFIG.energy_serial.parity,
+    stop: CONFIG.energy_serial.stopbits,
     open: false,
     encoding: 'hex',
-    windowPort: CONFIG.energy.windowPort,
-    rpiPort: CONFIG.energy.rpiPort,
+    windowPort: CONFIG.energy_serial.windowPort,
+    rpiPort: CONFIG.energy_serial.rpiPort,
 
     // 소켓 설정
-    port: CONFIG.energy.port,
-    addr: CONFIG.energy.addr
+    port: CONFIG.energy_socket.port,
+    addr: CONFIG.energy_socket.addr
 };
 
 const controlVar = {
     // 타입 정의
-    type: CONFIG.control.type, //'socket' , 'serial'
-    header: CONFIG.control.header, //'Socket' , 'Serial'
+    type: CONFIG.control_type, //'socket' , 'serial'
+    header: CONFIG.control_header, //'Socket' , 'Serial'
 
     // 시리얼 설정
-    rate: CONFIG.control.baudrate,
-    data: CONFIG.control.bytesize,
-    parity: CONFIG.control.parity,
-    stop: CONFIG.control.stopbits,
+    rate: CONFIG.control_serial.baudrate,
+    data: CONFIG.control_serial.bytesize,
+    parity: CONFIG.control_serial.parity,
+    stop: CONFIG.control_serial.stopbits,
     open: false,
     encoding: 'hex',
-    windowPort: CONFIG.control.windowPort,
-    rpiPort: CONFIG.control.rpiPort,
+    windowPort: CONFIG.control_serial.windowPort,
+    rpiPort: CONFIG.control_serial.rpiPort,
 
     // 소켓 설정
-    port: CONFIG.control.port,
-    addr: CONFIG.control.addr
+    port: CONFIG.control_socket.port,
+    addr: CONFIG.control_socket.addr
 };
 
 const smartVar = {
