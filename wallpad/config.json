@@ -1,6 +1,6 @@
 {
   "name": "BESTIN Wallpad with RS485",
-  "version": "2022.11.14",
+  "version": "2022.11.20",
   "slug": "wallpad",
   "description": "베스틴 월패드용 애드온",
   "arch": [
@@ -19,7 +19,7 @@
   "uart": true,
   "options": {
     "sendDelay": 80,
-    "receiveDelay": 10000,
+    "gapDelay": 30,
     "energy": {
       "type": "socket",
       "header": "Socket",
@@ -71,12 +71,13 @@
       "broker": "192.168.0.28",
       "username": "harwin",
       "password": "mosquitto",
+      "receiveDelay": 5000,
       "prefix": "homenet"
     }
   },
   "schema": {
     "sendDelay": "int",
-    "receiveDelay": "int",
+    "gapDelay": "int",
     "energy": {
       "type": "list(serial|socket)",
       "header": "list(Serial|Socket)",
@@ -128,6 +129,7 @@
       "broker": "str",
       "username": "str",
       "password": "str",
+      "receiveDelay": "int",
       "prefix": "str"
     },
     "customfile": "str?"
