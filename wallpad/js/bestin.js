@@ -19,18 +19,18 @@ const energyVar = {
     header: CONFIG.energy.header, //'Socket' , 'Serial'
 
     // 시리얼 설정
-    rate: CONFIG.energy.serial.baudrate,
-    data: CONFIG.energy.serial.bytesize,
-    parity: CONFIG.energy.serial.parity,
-    stop: CONFIG.energy.serial.stopbits,
+    rate: CONFIG.energy.baudrate,
+    data: CONFIG.energy.bytesize,
+    parity: CONFIG.energy.parity,
+    stop: CONFIG.energy.stopbits,
     open: false,
     encoding: 'hex',
-    windowPort: CONFIG.energy.serial.windowPort,
-    rpiPort: CONFIG.energy.serial.rpiPort,
+    windowPort: CONFIG.energy.windowPort,
+    rpiPort: CONFIG.energy.rpiPort,
 
     // 소켓 설정
-    port: CONFIG.energy.socket.port,
-    addr: CONFIG.energy.socket.addr
+    port: CONFIG.energy.port,
+    addr: CONFIG.energy.addr
 };
 
 const controlVar = {
@@ -39,23 +39,23 @@ const controlVar = {
     header: CONFIG.control.header, //'Socket' , 'Serial'
 
     // 시리얼 설정
-    rate: CONFIG.control.serial.baudrate,
-    data: CONFIG.control.serial.bytesize,
-    parity: CONFIG.control.serial.parity,
-    stop: CONFIG.control.serial.stopbits,
+    rate: CONFIG.control.baudrate,
+    data: CONFIG.control.bytesize,
+    parity: CONFIG.control.parity,
+    stop: CONFIG.control.stopbits,
     open: false,
     encoding: 'hex',
-    windowPort: CONFIG.control.serial.windowPort,
-    rpiPort: CONFIG.control.serial.rpiPort,
+    windowPort: CONFIG.control.windowPort,
+    rpiPort: CONFIG.control.rpiPort,
 
     // 소켓 설정
-    port: CONFIG.control.socket.port,
-    addr: CONFIG.control.socket.addr
+    port: CONFIG.control.port,
+    addr: CONFIG.control.addr
 };
 
 const smartVar = {
     // Bestin의 경우 rs422 방식으로 timestamp를 통한 엘리베이터 호출이므로 ew11같은 무선은 싱크가 안맞을 수 있어 유선을 권장함//
-    enable: 'off',  // 'off' , 'on'(비활성화, 활성화)
+    enable: CONFIG.smart.ennable,  // 'off' , 'on'(비활성화, 활성화)
 
     // 시리얼 설정
     rate: CONFIG.smart.baudrate,
@@ -66,11 +66,11 @@ const smartVar = {
     encoding: 'hex',
 
     // Recv 포트 설정
-    windowPort: smart.serial_recv.windowPort,
-    rpiPort: smart.serial_recv.rpiPort,
+    windowPort: smart.windowPort_recv,
+    rpiPort: smart.rpiPort_recv,
     // Send 포트 설정
-    windowPort2: smart.serial_send.windowPort,
-    rpiPort2: smart.serial_send.rpiPort,
+    windowPort2: smart.windowPort_send,
+    rpiPort2: smart.rpiPort_send,
 };
 
 const mqttVar = {
