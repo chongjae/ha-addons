@@ -30,7 +30,7 @@
         "bytesize": 8,
         "parity": "none",
         "stopbits": 1
-      },
+        },
       "socket": {
         "addr": "192.168.0.X",
         "port": 8899
