@@ -13,7 +13,7 @@ else
   	if [ ! -f $SHARE_DIR/$JS_FILE ]; then
 		LS_RESULT=`ls $SHARE_DIR | grep wallpad`
 		if [ $? -eq 0 ]; then
-			rm $SHARE_DIR/*bestin.js
+			rm $SHARE_DIR/bestin.js
 		fi
         cp /js/bestin.js" $SHARE_DIR/$JS_FILE
 	fi
