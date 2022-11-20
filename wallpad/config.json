@@ -32,7 +32,7 @@
         "stopbits": 1
       },
       "socket": {
-        "addr": "192.168.0.18",
+        "addr": "192.168.0.X",
         "port": 8899
       }
     },
@@ -48,7 +48,7 @@
         "stopbits": 1
       },
       "socket": {
-        "addr": "192.168.0.18",
+        "addr": "192.168.0.X",
         "port": 8899
       }
     },
@@ -68,9 +68,9 @@
         }
       },
     "mqtt": {
-      "broker": "192.168.0.28",
-      "username": "harwin",
-      "password": "mosquitto",
+      "broker": "mqtt broker",
+      "username": "name",
+      "password": "passwd",
       "receiveDelay": 5000,
       "prefix": "homenet"
     }
