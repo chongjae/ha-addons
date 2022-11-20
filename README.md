@@ -30,43 +30,66 @@ Add-on configuration:
 
 ```yaml
 sendDelay: 80
-receiveDelay: 10000
-energy_config:
+gapDelay: 30
+energy
   type: socket
-  serial_port: /dev/ttyUSB0
-  baudrate: 9600
-  parity: none
-  socket_ip: 192.168.x.x
-  socket_port: 8899
-control_config:
+  header: Socket
+    serial:
+      windowPort: COM?
+      rpiPort": /dev/ttyUSB?
+      baudrate": 9600
+      bytesize": 8
+      parity": none
+      stopbits: 1
+    socket: 
+      addr: 192.168.0.X
+      port: 8899
+control:
   type: socket
-  serial_port: /dev/ttyUSB0
-  baudrate: 9600
-  parity: none
-  socket_ip: 192.168.x.x
-  socket_port: 8899
+  header: Socket
+    serial:
+      windowPort: COM?
+      rpiPort": /dev/ttyUSB?
+      baudrate": 9600
+      bytesize": 8
+      parity": none
+      stopbits: 1
+    socket: 
+      addr: 192.168.0.X
+      port: 8899
 mqtt:
   server: 192.168.x.x
   username: id
   password: pw
+  receiveDelay: 5000
+  prefix: homenet
 ```
 
 ### Option `MQTT` (필수)
 ```yaml
   senddelay: 80      // 전송 딜레이 1/1000초 단위
-  receivedelay: 10000	// 전송후 메시지 수신 지연 시간 1/1000초 단위
+  receivedelay: 5000	// 전송후 메시지 수신 지연 시간 1/1000초 단위
+  prefix: homenet  // mqtt topic 맨 앞에 오는것, '"bestin"/Light1/power2/state' 등으로 변경가능 
 ```
 
-### Option: `type` (필수)
-통신 방법: serial 또는 socket 
-
+### Option: `type, header` (필수)
+통신 방법 --->
+  type: serial 또는 socket 
+  header: Serial 또는 Socket 
+  
 ### Option: `serial` (옵션)
-type: serial 로 설정한 경우 아래 옵션 사용
+header: Serial 로 설정한 경우 아래 옵션 사용
+baudrate, bytesize, parity, stopbits (기본값 9600, 8, none, 1)
+rpiPort: 라즈베리파이 포트 (/dev/ttyUSB0-->usb to rs485, /dev/ttyAMA0--> ttl to rs485)
+windowPort: 윈도우 포트 (COM0)
 
 ```yaml
-  serial_port: /dev/ttyUSB0  // 시리얼포트명
+  rpiPort: /dev/ttyUSB0  // 시리얼포트명
+  windowPort: COM0  // 시리얼포트명
   baudrate: 9600      // 시리얼 통신 속도
-  parity : none       // 패리티 체크 (none, even, odd 중 한 값)
+  bytesize": 8        // 
+  parity : none       // 패리티 (none, even, odd)
+  stopbits: 1         //
 ```
 socket을 사용하는 경우 위 값은 무시합니다.
 
@@ -84,6 +107,8 @@ serial을 사용하는 경우 위 값은 무시합니다.
   server: 192.168.x.xx  // MQTT 서버
   username: id          // MQTT ID
   password: pw          // MQTT PW
+  receiveDelay: 5000    // 전송후 메시지 수신 지연 시간 1/1000초 단위
+  prefix: homenet       // MQTT RREFIX
 ```
 
 ### Option: `customefile` (옵션)
@@ -110,22 +135,27 @@ const CONFIG = require('/data/options.json');
 // 이후 CONFIG.mqtt.username 과 같이 사용가능합니다. 
 // 사용가능한 옵션
 CONFIG.type
+CONFIG.header
 CONFIG.sendDelay
+CONFIG.gapDelay
 
 CONFIG.serial.port
 CONFIG.serial.baudrate
+CONFIG.serial.bytesize
 CONFIG.serial.parity
+CONFIG.serial.stopbits
 
 CONFIG.mqtt.server
 CONFIG.mqtt.username
 CONFIG.mqtt.password
 CONFIG.mqtt.receiveDelay
+CONFIG.mqtt.prefix
 
 //------------ 적용 예시 ------------
 const CONST = {
     // 포트이름 설정
-    portName: process.platform.startsWith('win') ? "COM6" : CONFIG.serial.port, 
     sendDelay: CONFIG.serial.senddelay,
+    gapDelay: CONFIG.serial.gapdelay,
     mqttBroker: 'mqtt://'+CONFIG.mqtt.server, 
     mqttDelay: CONFIG.mqtt.receivedelay,
     mqttUser: CONFIG.mqtt.username, 
