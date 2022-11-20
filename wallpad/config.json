@@ -23,50 +23,45 @@
     "energy": {
       "type": "socket",
       "header": "Socket",
-      "serial": {
-        "windowPort": "COM?",
-        "rpiPort": "/dev/ttyUSB?",
-        "baudrate": 9600,
-        "bytesize": 8,
-        "parity": "none",
-        "stopbits": 1
-        },
-      "socket": {
-        "addr": "192.168.0.X",
-        "port": 8899
-      }
-    },
-    "control": {
-      "type": "socket",
-      "header": "Socket",
-      "serial": {       
-        "windowPort": "COM?",
-        "rpiPort": "/dev/ttyUSB?",
-        "baudrate": 9600,
-        "bytesize": 8,
-        "parity": "none",
-        "stopbits": 1
-      },
-      "socket": {
-        "addr": "192.168.0.X",
-        "port": 8899
-      }
-    },
-    "smart": {
-      "ennable": "off",
+
+      "windowPort": "COM?",
+      "rpiPort": "/dev/ttyUSB?",
       "baudrate": 9600,
       "bytesize": 8,
       "parity": "none",
       "stopbits": 1,
-      "serial_recv": {
-        "windowPort": "COM?",
-        "rpiPort": "/dev/ttyUSB?"
-        },
-      "serial_send": {
-        "windowPort": "COM?",
-        "rpiPort": "/dev/ttyUSB?"
-        }
-      },
+
+      "addr": "192.168.0.X",
+      "port": 8899
+    },
+    "control": {
+      "type": "socket",
+      "header": "Socket",
+
+      "windowPort": "COM?",
+      "rpiPort": "/dev/ttyUSB?",
+      "baudrate": 9600,
+      "bytesize": 8,
+      "parity": "none",
+      "stopbits": 1,
+
+      "addr": "192.168.0.X",
+      "port": 8899
+    },
+    "smart": {
+      "ennable": "off",
+
+      "baudrate": 9600,
+      "bytesize": 8,
+      "parity": "none",
+      "stopbits": 1,
+
+      "windowPort_recv": "COM?",
+      "rpiPort_recv": "/dev/ttyUSB?",
+
+      "windowPort_send": "COM?",
+      "rpiPort_send": "/dev/ttyUSB?"
+    },
     "mqtt": {
       "broker": "mqtt broker",
       "username": "name",
@@ -81,34 +76,30 @@
     "energy": {
       "type": "list(serial|socket)",
       "header": "list(Serial|Socket)",
-      "serial": {
-        "windowPort": "str?",
-        "rpiPort": "str?",
-        "baudrate": "int?",
-        "bytesize": "int?",
-        "parity": "list(none|even|odd)?",
-        "stopbits": "int?"
-      },
-      "socket": {
-        "addr": "str?",
-        "port": "int?"
-      }
+
+      "windowPort": "str?",
+      "rpiPort": "str?",
+      "baudrate": "int?",
+      "bytesize": "int?",
+      "parity": "list(none|even|odd)?",
+      "stopbits": "int?",
+      
+      "addr": "str?",
+      "port": "int?"
     },
     "control":{
       "type": "list(serial|socket)",
       "header": "list(Serial|Socket)",
-      "serial": {
-        "windowPort": "str?",
-        "rpiPort": "str?",
-        "baudrate": "int?",
-        "bytesize": "int?",
-        "parity": "list(none|even|odd)?",
-        "stopbits": "int?"
-      },
-      "socket": {
-        "addr": "str?",
-        "port": "int?"
-      }
+
+      "windowPort": "str?",
+      "rpiPort": "str?",
+      "baudrate": "int?",
+      "bytesize": "int?",
+      "parity": "list(none|even|odd)?",
+      "stopbits": "int?",
+
+      "addr": "str?",
+      "port": "int?"
     },
     "smart": {
       "ennable": "list(on|off)",
@@ -116,14 +107,12 @@
       "bytesize": "int?",
       "parity": "list(none|even|odd)?",
       "stopbits": "int?",
-      "serial_recv": {
-        "windowPort": "str?",
-        "rpiPort": "str?"
-      },
-      "serial_send": {
-        "windowPort": "str?",
-        "rpiPort": "str?"
-      }
+
+      "windowPort_recv": "str?",
+      "rpiPort_recv": "str?",
+
+      "windowPort_send": "str?",
+      "rpiPort_send": "str?"
     },    
     "mqtt": {
       "broker": "str",
