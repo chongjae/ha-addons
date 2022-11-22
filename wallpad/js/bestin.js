@@ -56,18 +56,10 @@ const controlVar = {
 const smartVar = {
     // Bestin의 경우 rs422 방식으로 timestamp를 통한 엘리베이터 호출이므로 ew11같은 무선은 싱크가 안맞을 수 있어 유선을 권장함//
     enable: CONFIG.smart.ennable,  // 'off' , 'on'(비활성화, 활성화)
-
-    // 시리얼 설정
-    rate: CONFIG.smart.baudrate,
-    data: CONFIG.smart.bytesize,
-    parity: CONFIG.smart.parity,
-    stop: CONFIG.smart.stopbits,
-    open: false,
-    encoding: 'hex',
-
+    
     // Recv 포트 설정
-    windowPort: smart.windowPort_recv,
-    rpiPort: smart.rpiPort_recv,
+    windowPort1: smart.windowPort_recv,
+    rpiPort1: smart.rpiPort_recv,
     // Send 포트 설정
     windowPort2: smart.windowPort_send,
     rpiPort2: smart.rpiPort_send,
@@ -88,7 +80,7 @@ const CONST = {
     // 포트이름 설정
     portEN: process.platform.startsWith('win') ? energyVar.windowPort : energyVar.rpiPort,
     portCTRL: process.platform.startsWith('win') ? controlVar.windowPort : controlVar.rpiPort,
-    portRecv: process.platform.startsWith('win') ? smartVar.windowPort : smartVar.rpiPort,  //RJ45(4,5)
+    portRecv: process.platform.startsWith('win') ? smartVar.windowPort1 : smartVar.rpiPort1,  //RJ45(4,5)
     portSend: process.platform.startsWith('win') ? smartVar.windowPort2 : smartVar.rpiPort2,  //RJ45(7,8)
     // SerialPort Delay(ms)
     sendDelay: CONFIG.sendDelay,  //실제 명령 패킷전송 딜레이
@@ -125,26 +117,22 @@ const CONST = {
         { deviceId: 'Fan', subId: '', stateHex: Buffer.alloc(3, '000101', 'hex'), power: 'ON', preset: 'low' },
         { deviceId: 'Fan', subId: '', stateHex: Buffer.alloc(3, '000102', 'hex'), power: 'ON', preset: 'medium' },
         { deviceId: 'Fan', subId: '', stateHex: Buffer.alloc(3, '000103', 'hex'), power: 'ON', preset: 'high' },
-        { deviceId: 'Fan', subId: '', stateHex: Buffer.alloc(2, '0011', 'hex'), power: 'ON', preset: 'nature OFF' },
-        { deviceId: 'Fan', subId: '', stateHex: Buffer.alloc(2, '0011', 'hex'), power: 'ON', preset: 'nature ON' },
-
-        { deviceId: 'Thermo', subId: '1', stateHex: Buffer.alloc(2, '0102', 'hex'), power: 'OFF', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '1', stateHex: Buffer.alloc(2, '0101', 'hex'), power: 'ON', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '2', stateHex: Buffer.alloc(2, '0202', 'hex'), power: 'OFF', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '2', stateHex: Buffer.alloc(2, '0201', 'hex'), power: 'ON', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '3', stateHex: Buffer.alloc(2, '0302', 'hex'), power: 'OFF', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '3', stateHex: Buffer.alloc(2, '0301', 'hex'), power: 'ON', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '4', stateHex: Buffer.alloc(2, '0402', 'hex'), power: 'OFF', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '4', stateHex: Buffer.alloc(2, '0401', 'hex'), power: 'ON', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '5', stateHex: Buffer.alloc(2, '0502', 'hex'), power: 'OFF', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '5', stateHex: Buffer.alloc(2, '0501', 'hex'), power: 'ON', setTemp: '', curTemp: '' },
+        //{ deviceId: 'Fan', subId: '', stateHex: Buffer.alloc(2, '0001', 'hex'), power: 'ON', preset: 'nature OFF' },
+        //{ deviceId: 'Fan', subId: '', stateHex: Buffer.alloc(2, '0011', 'hex'), power: 'ON', preset: 'nature ON' },
 
         { deviceId: 'Gas', subId: '', stateHex: Buffer.alloc(3, '800000', 'hex'), power: 'OFF' },
         { deviceId: 'Gas', subId: '', stateHex: Buffer.alloc(3, '800100', 'hex'), power: 'ON' },
 
-        { deviceId: 'Elevator', subId: '', stateHex: Buffer.alloc(18), floor: '' },
-        { deviceId: 'Elevator', subId: '', stateHex: Buffer.alloc(18), call: 'OFF' },
-        { deviceId: 'Elevator', subId: '', stateHex: Buffer.alloc(18), call: 'ON' }
+        { deviceId: 'Thermo', subId: '1', stateHex: Buffer.alloc(2, '0102', 'hex'), power: 'OFF', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '1', stateHex: Buffer.alloc(2, '0111', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '2', stateHex: Buffer.alloc(2, '0202', 'hex'), power: 'OFF', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '2', stateHex: Buffer.alloc(2, '0211', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '3', stateHex: Buffer.alloc(2, '0302', 'hex'), power: 'OFF', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '3', stateHex: Buffer.alloc(2, '0311', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '4', stateHex: Buffer.alloc(2, '0402', 'hex'), power: 'OFF', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '4', stateHex: Buffer.alloc(2, '0411', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '5', stateHex: Buffer.alloc(2, '0502', 'hex'), power: 'OFF', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '5', stateHex: Buffer.alloc(2, '0511', 'hex'), power: 'heat', setTemp: '', curTemp: '' }
     ],
 
     DEVICE_COMMAND: [
@@ -191,6 +179,16 @@ const CONST = {
         { deviceId: 'Outlet', subId: '5', commandHex0: Buffer.alloc(13, '02310D01D4050081000000097B', 'hex'), power1: 'ON' },
         { deviceId: 'Outlet', subId: '5', commandHex0: Buffer.alloc(13, '02310D01E205000200000000E3', 'hex'), power2: 'OFF' },
         { deviceId: 'Outlet', subId: '5', commandHex0: Buffer.alloc(13, '02310D01E60500820000001275', 'hex'), power2: 'ON' },   //방5
+        { deviceId: 'StandbyPw', subId: '1', commandHex0: Buffer.alloc(13, '02310D01FA010000830000004E', 'hex'), power: 'ON' },
+        { deviceId: 'StandbyPw', subId: '1', commandHex0: Buffer.alloc(13, '02310D01010100000300000045', 'hex'), power: 'OFF' },
+        { deviceId: 'StandbyPw', subId: '2', commandHex0: Buffer.alloc(13, '02310D01EF020000830000005E', 'hex'), power: 'ON' },
+        { deviceId: 'StandbyPw', subId: '2', commandHex0: Buffer.alloc(13, '02310D01F902000003000000C8', 'hex'), power: 'OFF' },
+        { deviceId: 'StandbyPw', subId: '3', commandHex0: Buffer.alloc(13, '02310D013B0300008300000091', 'hex'), power: 'ON' },
+        { deviceId: 'StandbyPw', subId: '3', commandHex0: Buffer.alloc(13, '02310D01AE0300000300000094', 'hex'), power: 'OFF' },
+        { deviceId: 'StandbyPw', subId: '4', commandHex0: Buffer.alloc(13, '02310D018D040000830000003E', 'hex'), power: 'ON' },
+        { deviceId: 'StandbyPw', subId: '4', commandHex0: Buffer.alloc(13, '02310D019A04000003000000A9', 'hex'), power: 'OFF' },
+        { deviceId: 'StandbyPw', subId: '5', commandHex0: Buffer.alloc(13, '02310D01C80500008300000074', 'hex'), power: 'ON' },
+        { deviceId: 'StandbyPw', subId: '5', commandHex0: Buffer.alloc(13, '02310D01D205000003000000F2', 'hex'), power: 'OFF' },
 
         { deviceId: 'Fan', subId: '', commandHex1: Buffer.alloc(10, '0261014c00000100002f', 'hex'), power: 'OFF' }, //꺼짐
         { deviceId: 'Fan', subId: '', commandHex1: Buffer.alloc(10, '026101e3000101000089', 'hex'), power: 'ON' }, //켜짐
@@ -200,8 +198,8 @@ const CONST = {
         { deviceId: 'Fan', subId: '', commandHex1: Buffer.alloc(10, '02610394000002000000', 'hex'), preset: 'medium' }, //중(켜짐)
         { deviceId: 'Fan', subId: '', commandHex1: Buffer.alloc(10, '0261039f0000030000fc', 'hex'), preset: 'high' }, //강(켜짐)
 
-        { deviceId: 'Thermo', subId: '1', commandHex1: Buffer.alloc(14, '02280e12e90101000000000000e3', 'hex'), power: 'heat' }, // 온도조절기1-on
-        { deviceId: 'Thermo', subId: '1', commandHex1: Buffer.alloc(14, '02280e12f70102000000000000c8', 'hex'), power: 'off' }, // 온도조절기1-off
+        { deviceId: 'Thermo', subId: '1', commandHex1: Buffer.alloc(14, '02280e12e90101000000000000e3', 'hex'), power: 'heat' }, // 온도조절기1-ON
+        { deviceId: 'Thermo', subId: '1', commandHex1: Buffer.alloc(14, '02280e12f70102000000000000c8', 'hex'), power: 'off' }, // 온도조절기1-OFF
         { deviceId: 'Thermo', subId: '2', commandHex1: Buffer.alloc(14, '02280e12d30201000000000000ee', 'hex'), power: 'heat' },
         { deviceId: 'Thermo', subId: '2', commandHex1: Buffer.alloc(14, '02280e12dd0202000000000000f5', 'hex'), power: 'off' },
         { deviceId: 'Thermo', subId: '3', commandHex1: Buffer.alloc(14, '02280e127e030100000000000058', 'hex'), power: 'heat' },
@@ -210,7 +208,7 @@ const CONST = {
         { deviceId: 'Thermo', subId: '4', commandHex1: Buffer.alloc(14, '02280e12c10402000000000000f7', 'hex'), power: 'off' },
         { deviceId: 'Thermo', subId: '5', commandHex1: Buffer.alloc(14, '02280e12cc050100000000000008', 'hex'), power: 'heat' },
         { deviceId: 'Thermo', subId: '5', commandHex1: Buffer.alloc(14, '02280e12be05020000000000008f', 'hex'), power: 'off' },
-        { deviceId: 'Thermo', subId: '1', commandHex1: Buffer.alloc(14, '', 'hex'), setTemp: '' }, // 온도조절기1-온도설정
+        { deviceId: 'Thermo', subId: '1', commandHex1: Buffer.alloc(16, '', 'hex'), setTemp: '' }, // 온도조절기1-온도설정
         { deviceId: 'Thermo', subId: '2', commandHex1: Buffer.alloc(14, '', 'hex'), setTemp: '' },
         { deviceId: 'Thermo', subId: '3', commandHex1: Buffer.alloc(14, '', 'hex'), setTemp: '' },
         { deviceId: 'Thermo', subId: '4', commandHex1: Buffer.alloc(14, '', 'hex'), setTemp: '' },
@@ -219,7 +217,7 @@ const CONST = {
         { deviceId: 'Gas', subId: '', commandHex1: Buffer.alloc(10, '0231023c000000000011', 'hex'), power: 'OFF' },
         //{ deviceId: 'Elevator', subId: '', commandHex2: Buffer.from(bytes), call: 'ON' }
     ],
-
+    
     // 상태 Topic (/homenet/${deviceId}${subId}/${property}/state/ = ${value})
     // 명령어 Topic (/homenet/${deviceId}${subId}/${property}/command/ = ${value})
     TOPIC_PRFIX: mqttVar.topic_prefix,
@@ -294,7 +292,7 @@ var queue = new Array();
 var retryCount = 0;
 
 // MQTT-Broker 연결 
-const client = mqtt.connect('mqtt://' + mqttVar.broker, {
+const client = mqtt.connect('mqtt://'+mqttVar.broker, {
     port: mqttVar.port,
     username: mqttVar.username,
     password: mqttVar.password,
@@ -305,7 +303,7 @@ client.on('connect', () => {
     client.subscribe(CONST.DEVICE_TOPIC, (err) => { if (err) log('ERROR   MQTT subscribe fail! -', CONST.DEVICE_TOPIC) });
 });
 client.on('error', err => {
-    if (err.code == "ECONNREFUSED") {
+    if (err.code == "EConNREFUSED") {
         log("ERROR   Make sure mqtt broker is enabled")
     } else { log("ERROR   MQTT connection failed: " + err.message); }
 });
@@ -381,9 +379,9 @@ else {
         log('INFO   Success connected to control', /*"(" + controlVar.addr + ")"*/);
     });
     control485.on('error', (err) => {
-        if (err.code == "ETIMEDOUT") {
+    if (err.code == "ETIMEDOUT") {
             log("ERROR   Make sure socket is activated")
-        } else { log('ERROR   Control connection failed:', err.message) }
+    } else { log('ERROR   Control connection failed:', err.message) }
     });
     control = control485.pipe(new CustomParser());
 };
@@ -394,12 +392,12 @@ if (smartVar.enable == 'on') {
     log('initialize serial...')
     port1 = new SerialPort({
         path: CONST.portRecv,
-        baudRate: smartVar.rate,
-        dataBits: smartVar.data,
-        parity: smartVar.parity,
-        stopBits: smartVar.stop,
-        autoOpen: smartVar.open,
-        encoding: smartVar.encoding
+        baudRate: 9600,
+        dataBits: 8,
+        parity: 'none',
+        stopBits: 1,
+        autoOpen: false,
+        encoding: 'hex'
     });
     port1.on('open', () => log('INFO   Success open smart1 port:', CONST.portRecv));
     port1.on('close', () => log('WARNING   Close smart1 port:', CONST.portRecv));
@@ -411,12 +409,12 @@ if (smartVar.enable == 'on') {
 
     port2 = new SerialPort({
         path: CONST.portSend,
-        baudRate: smartVar.rate,
-        dataBits: smartVar.data,
-        parity: smartVar.parity,
-        stopBits: smartVar.stop,
-        autoOpen: smartVar.open,
-        encoding: smartVar.encoding
+        baudRate: 9600,
+        dataBits: 8,
+        parity: 'none',
+        stopBits: 1,
+        autoOpen: false,
+        encoding: 'hex'
     });
     port2.on('open', () => log('INFO   Success open smart2 port:', CONST.portRecv));
     port2.on('close', () => log('WARNING   Close smart2 port:', CONST.portRecv));
@@ -429,9 +427,9 @@ if (smartVar.enable == 'on') {
     // Timestamp
     fs.readFile('./timestamp.txt', function (err, data) {
         if (err) {
-            log('ERROR   Failed to open file:', err.message)
+            log('ERROR   Failed to open timestamp.txt file:', err.message)
         } else {
-            log('INFO   Success file open')
+            log('INFO   Success timestamp.txt file open')
         }
         var buf = data.toString().split('\n');
         for (i in buf) {
@@ -448,12 +446,16 @@ energy.on('data', function (data) {
         //log('WARNING   Packet stx not defined:', data.toString('hex', 0, 1), data.toString('hex', 1));
         return;
     }  // "베스틴 패킷은 길이가 불규칙 하여 가끔식 패킷이 튀는경우가 있음"
-
-    if (data[2] == 0x1e && data[3] == 0x91) {
-        var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
-        if (objFound && data.length == 30) {
-            //조명, 콘센트 상태 정보
-            updateStatus(objFound);
+    
+    if (data[2] == 0x1e) { 
+        switch (data[5]) {
+            case 0xe1: case 0xe2: case 0xe3: case 0xe4: case 0xe5:
+                var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
+                if (objFound && data.length === 30) {
+                    //조명, 콘센트 상태 정보
+                    updateStatus(objFound);
+                }
+                break;
         }
     }
     // 딜레이
@@ -468,6 +470,7 @@ energy.on('data', function (data) {
             queue.splice(objFoundIdx, 1);
             retryCount = 0;
         }
+        return;
     }
 });
 
@@ -478,25 +481,26 @@ control.on('data', function (data) {
         //log('WARNING   Packet stx not defined:', data.toString('hex', 0, 1), data.toString('hex', 1));
         return;
     }
-    switch (data[1]) {
-        case 0x31: case 0x61:
-            if (data[2] == 0x80) {
+    if (data[2] == 0x80) {
+        switch (data[1]) {
+            case 0x31: case 0x61:
                 var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
-                if (objFound && data.length == 10) {
+                if (objFound && data.length === 10) {
                     //환기, 가스 상태 정보
                     updateStatus(objFound);
                 }
-            }
-            break;
-        case 0x28:
-            if (data[2] == 0x10 && data[3] == 0x91) {
-                var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
-                if (objFound && data.length == 16) {
-                    //난방 상태 정보
-                    updateStatus(objFound);
-                }
-            }
-            break;
+                break;
+        }
+    }
+    if (data[2]== 0x10 & data[3]== 0x91) {
+        var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
+        if (objFound && data.length === 16) {
+            //난방 상태 정보
+            objFound.setTemp = ((data[7]&0x3f)+(data[7]&0x40>0)*0.5).toString(10);  // 설정 온도  
+            objFound.curTemp = ((data[9])/10.0).toString(10);  // 현재 온도
+            updateStatus(objFound);
+        }
+        return;
     }
     // 딜레이
     commandProc();
@@ -513,7 +517,7 @@ control.on('data', function (data) {
             }
             break;
     }
-    if (data[2] == 0x10 && data[3] == 0x92) {  //난방: 0x10,92
+    if (data[2] == 0x10 & data[3] == 0x92) {  //난방: 0x10,92
         const ack2 = Buffer.alloc(1);
         data.copy(ack2, 0, 1, 2, 3);
         var objFoundIdx = queue.findIndex(obj => obj.commandHex1?.includes(ack2));
@@ -522,6 +526,7 @@ control.on('data', function (data) {
             queue.splice(objFoundIdx, 1);
             retryCount = 0;
         }
+        return;
     }
 });
 
@@ -538,6 +543,7 @@ if (smartVar.enable == 'on') {
                 queue.splice(objFoundIdx, 1);
                 retryCount = 0;
             }
+            return;
         }
     });
 };
@@ -582,7 +588,7 @@ client.on('message', (topic, message) => {
                 objFound = CONST.DEVICE_COMMAND.find(obj => obj.deviceId + obj.subId === topics[1] && obj.hasOwnProperty('setTemp'));
                 objFound.commandHex1[3] = Number(value);
                 objFound.setTemp = String(Number(value)); // 온도값은 소수점이하는 버림
-                var xorSum = objFound.commandHex1[0] ^ objFound.commandHex1[1] ^ objFound.commandHex1[2] ^ objFound.commandHex1[3] ^ 0x00
+                var xorSum = objFound.commandHex1[0] ^ objFound.commandHex1[1] ^ objFound.commandHex1[2] ^ objFound.commandHex1[3] ^ 0x80
                 objFound.commandHex1[7] = xorSum; // 마지막 Byte는 XOR SUM
             }
             // 다른 명령은 미리 정의해놓은 값을 매칭
@@ -651,5 +657,6 @@ const commandProc = () => {
 }
 
 setTimeout(() => { mqttReady = true; log('INFO   MQTT ready...') }, CONST.mqttDelay);
-setInterval(commandProc, CONST.gabDelay);
+setInterval(commandProc, CONST.gapDelay);
 
+    
