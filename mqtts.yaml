@@ -97,11 +97,6 @@ switch:
   payload_on: "ON"
   payload_off: "ON"
   icon: mdi:elevator
-  
-sensor:
-- name: "evsensor"
-  state_topic: "homenet/Elevator/floor/state"
-  icon: mdi:elevator
 
 climate:
 - name: "thermostat_1"
@@ -116,7 +111,6 @@ climate:
   min_temp: 5
   max_temp: 40
   precision: 0.1
-  icon: mdi:thermostat
 - name: "thermostat_2"
   mode_state_topic: "homenet/Thermo2/power/state"
   mode_command_topic: "homenet/Thermo2/power/command"
@@ -129,7 +123,6 @@ climate:
   min_temp: 5
   max_temp: 40
   precision: 0.1
-  icon: mdi:thermostat
 - name: "thermostat_3"
   mode_state_topic: "homenet/Thermo3/power/state"
   mode_command_topic: "homenet/Thermo3/power/command"
@@ -142,7 +135,6 @@ climate:
   min_temp: 5
   max_temp: 40
   precision: 0.1
-  icon: mdi:thermostat
 - name: "thermostat_4"
   mode_state_topic: "homenet/Thermo4/power/state"
   mode_command_topic: "homenet/Thermo4/power/command"
@@ -155,7 +147,6 @@ climate:
   min_temp: 5
   max_temp: 40
   precision: 0.1
-  icon: mdi:thermostat
 - name: "thermostat_5"
   mode_state_topic: "homenet/Thermo5/power/state"
   mode_command_topic: "homenet/Thermo5/power/command"
@@ -168,7 +159,6 @@ climate:
   min_temp: 5
   max_temp: 40
   precision: 0.1
-  icon: mdi:thermostat
 
 fan:
 - name: "fan"
@@ -210,7 +200,6 @@ fan:
     - 'high'
     - 'nature ON'
     - 'nature OFF'
-  icon: mdi:fan
 
 
     
