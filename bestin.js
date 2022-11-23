@@ -276,7 +276,7 @@ var queue = new Array();
 var retryCount = 0;
 
 // MQTT-Broker 연결 
-const client = mqtt.connect('mqtt://'+mqttVar.broker, {
+const client = mqtt.connect(mqttVar.broker, {
     port: mqttVar.port,
     username: mqttVar.username,
     password: mqttVar.password,
