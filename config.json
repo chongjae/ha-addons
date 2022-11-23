@@ -96,7 +96,6 @@
       "password": "str",
       "receiveDelay": "int",
       "prefix": "str"
-    },
-    "customfile": "str?"
+    }
   }
 }
