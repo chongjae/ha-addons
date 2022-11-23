@@ -7,7 +7,6 @@
 
 const util = require('util');
 const net = require('net');
-var fs = require("fs");
 const SerialPort = require('serialport').SerialPort;
 const mqtt = require('mqtt');
 
@@ -53,18 +52,6 @@ const controlVar = {
     addr: CONFIG.control_socket.addr
 };
 
-const smartVar = {
-    // Bestin의 경우 rs422 방식으로 timestamp를 통한 엘리베이터 호출이므로 ew11같은 무선은 싱크가 안맞을 수 있어 유선을 권장함//
-    enable: off,  // 'off' , 'on'(비활성화, 활성화)
-    
-    // Recv 포트 설정
-    windowPort1: smart.windowPort_recv,
-    rpiPort1: smart.rpiPort_recv,
-    // Send 포트 설정
-    windowPort2: smart.windowPort_send,
-    rpiPort2: smart.rpiPort_send,
-};
-
 const mqttVar = {
     broker: 'mqtt://' + CONFIG.mqtt.broker,
     port: CONFIG.mqtt.port,
@@ -80,8 +67,6 @@ const CONST = {
     // 포트이름 설정
     portEN: process.platform.startsWith('win') ? energyVar.windowPort : energyVar.rpiPort,
     portCTRL: process.platform.startsWith('win') ? controlVar.windowPort : controlVar.rpiPort,
-    portRecv: process.platform.startsWith('win') ? smartVar.windowPort1 : smartVar.rpiPort1,  //RJ45(4,5)
-    portSend: process.platform.startsWith('win') ? smartVar.windowPort2 : smartVar.rpiPort2,  //RJ45(7,8)
     // SerialPort Delay(ms)
     sendDelay: CONFIG.sendDelay,  //실제 명령 패킷전송 딜레이
     gapDelay: CONFIG.gapDelay,  //명령 전송후 ack메세지 검사 딜레이
@@ -215,7 +200,6 @@ const CONST = {
         { deviceId: 'Thermo', subId: '5', commandHex1: Buffer.alloc(14, '', 'hex'), setTemp: '' },
 
         { deviceId: 'Gas', subId: '', commandHex1: Buffer.alloc(10, '0231023c000000000011', 'hex'), power: 'OFF' },
-        //{ deviceId: 'Elevator', subId: '', commandHex2: Buffer.from(bytes), call: 'ON' }
     ],
     
     // 상태 Topic (/homenet/${deviceId}${subId}/${property}/state/ = ${value})
@@ -386,58 +370,6 @@ else {
     control = control485.pipe(new CustomParser());
 };
 
-// Smart
-if (smartVar.enable == 'on') {
-
-    log('initialize serial...')
-    port1 = new SerialPort({
-        path: CONST.portRecv,
-        baudRate: 9600,
-        dataBits: 8,
-        parity: 'none',
-        stopBits: 1,
-        autoOpen: false,
-        encoding: 'hex'
-    });
-    port1.on('open', () => log('INFO   Success open smart1 port:', CONST.portRecv));
-    port1.on('close', () => log('WARNING   Close smart1 port:', CONST.portRecv));
-    port1.open((err) => {
-        if (err) {
-            return log('ERROR   Failed to open smart1 port:', err.message);
-        }
-    });
-
-    port2 = new SerialPort({
-        path: CONST.portSend,
-        baudRate: 9600,
-        dataBits: 8,
-        parity: 'none',
-        stopBits: 1,
-        autoOpen: false,
-        encoding: 'hex'
-    });
-    port2.on('open', () => log('INFO   Success open smart2 port:', CONST.portRecv));
-    port2.on('close', () => log('WARNING   Close smart2 port:', CONST.portRecv));
-    port2.open((err) => {
-        if (err) {
-            return log('ERROR   Failed to open smart2 port:', err.message);
-        }
-    });
-
-    // Timestamp
-    fs.readFile('./timestamp.txt', function (err, data) {
-        if (err) {
-            log('ERROR   Failed to open timestamp.txt file:', err.message)
-        } else {
-            log('INFO   Success timestamp.txt file open')
-        }
-        var buf = data.toString().split('\n');
-        for (i in buf) {
-            //console.log(buf[i]);
-        }
-    });
-};
-
 // 홈넷에서 SerialPort로 상태 정보 수신
 energy.on('data', function (data) {
     lastReceive = new Date().getTime();
@@ -530,30 +462,13 @@ control.on('data', function (data) {
     }
 });
 
-if (smartVar.enable == 'on') {
-    port1.on('data', function (data) {
-        lastReceive = new Date().getTime();
-
-        if (data[11] == 0x01) {
-            const Elv = Buffer.alloc(1);
-            data.copy(Elv, 0, 1, 11);
-            var objFoundIdx = queue.findIndex(obj => obj.commandHex2?.includes(Elv));
-            if (objFoundIdx > -1) {
-                log('INFO   Success command #Set State=', retryCount);
-                queue.splice(objFoundIdx, 1);
-                retryCount = 0;
-            }
-            return;
-        }
-    });
-};
 ///////////////////////////////code rectify complete
 
 // MQTT로 HA에 상태값 전송
 var updateStatus = (obj) => {
     var arrStateName = Object.keys(obj);
     // 상태값이 아닌 항목들은 제외 [deviceId, subId, stateHex, commandHex, sentTime]
-    const arrFilter = ['deviceId', 'subId', 'stateHex', 'commandHex0', 'commandHex1', 'commandHex2', 'sentTime'];
+    const arrFilter = ['deviceId', 'subId', 'stateHex', 'commandHex0', 'commandHex1', 'sentTime'];
     arrStateName = arrStateName.filter(stateName => !arrFilter.includes(stateName));
 
     // 상태값별 현재 상태 파악하여 변경되었으면 상태 반영 (MQTT publish)
@@ -632,14 +547,10 @@ const commandProc = () => {
     if (obj.commandHex0) {
         energy485.write(obj.commandHex0, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
         log('INFO  ', 'Send to Device:', obj.deviceId, obj.subId, '->', obj.state, obj.commandHex0.toString('hex'));
-    } else if (obj.commandHex1) {
+    } else {
         control485.write(obj.commandHex1, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
         log('INFO  ', 'Send to Device:', obj.deviceId, obj.subId, '->', obj.state, obj.commandHex1.toString('hex'));
-    } else {
-        port2.write(obj.commandHex2, (err) => { if (err) return log('ERROR   Send Error: ', err.message); });
-        log('INFO  ', 'Send to Device:', obj.deviceId, obj.subId, '->', obj.state, obj.commandHex2.toString());
     }
-    lastReceive = new Date().getTime();
     obj.sentTime = lastReceive;	// 명령 전송시간 sentTime으로 저장
     // ack메시지가 오지 않는 경우 방지
     if (retryCount++ < 20) {
