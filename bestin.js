@@ -55,7 +55,7 @@ const controlVar = {
 
 const smartVar = {
     // Bestin의 경우 rs422 방식으로 timestamp를 통한 엘리베이터 호출이므로 ew11같은 무선은 싱크가 안맞을 수 있어 유선을 권장함//
-    enable: CONFIG.smart.ennable,  // 'off' , 'on'(비활성화, 활성화)
+    enable: off,  // 'off' , 'on'(비활성화, 활성화)
     
     // Recv 포트 설정
     windowPort1: smart.windowPort_recv,
