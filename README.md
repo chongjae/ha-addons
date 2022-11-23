@@ -106,7 +106,7 @@ type: socket 로 설정한 경우 아래 옵션 사용
 
 아래에 문의 하시면 답변을 구하실 수 있습니다.:
 
-- The [Home Assistant Korean Community][github].
+- The [Hass.io Add-on: bestinRS485][github].
 - The [Home Assistant 네이버카페][forum].
 
 버그신고는 카페나 깃허브로 해주세요 [open an issue on our GitHub][issue].
