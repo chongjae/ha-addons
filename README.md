@@ -93,7 +93,7 @@ type: socket 로 설정한 경우 아래 옵션 사용
 
 ### Option `MQTT` (필수)
 ```yaml
-  server: 192.168.x.xx  // MQTT 서버
+  broker: 192.168.x.xx  // MQTT 서버
   username: id          // MQTT ID
   password: pw          // MQTT PW
   receivedelay: 5000	// 전송후 메시지 수신 지연 시간 1/1000초 단위
