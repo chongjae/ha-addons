@@ -54,7 +54,7 @@ const controlVar = {
 
 const mqttVar = {
     broker: 'mqtt://' + CONFIG.mqtt.broker,
-    port: CONFIG.mqtt.port,
+    port: 1883,
     username: CONFIG.mqtt.username,
     password: CONFIG.mqtt.password,
     clientId: 'bestin_ipark',
