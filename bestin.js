@@ -15,46 +15,28 @@ const CONFIG = require('/data/options.json');
 const energyVar = {
     // 타입 정의
     type: CONFIG.energy_type, //'socket' , 'serial'
-    header: CONFIG.energy_header, //'Socket' , 'Serial'
-
-    // 시리얼 설정
-    rate: CONFIG.energy_serial.baudrate,
-    data: CONFIG.energy_serial.bytesize,
-    parity: CONFIG.energy_serial.parity,
-    stop: CONFIG.energy_serial.stopbits,
-    open: false,
-    encoding: 'hex',
-    windowPort: CONFIG.energy_serial.windowPort,
-    rpiPort: CONFIG.energy_serial.rpiPort,
-
+    //시리얼 설정
+    windowPort: CONFIG.serial.energy_windowPort,
+    rpiPort: CONFIG.serial.energy_rpiPort,
     // 소켓 설정
-    port: CONFIG.energy_socket.port,
-    addr: CONFIG.energy_socket.addr
+    port: CONFIG.socket.energy_port,
+    addr: CONFIG.socket.energy_addr
 };
 
 const controlVar = {
     // 타입 정의
     type: CONFIG.control_type, //'socket' , 'serial'
-    header: CONFIG.control_header, //'Socket' , 'Serial'
-
     // 시리얼 설정
-    rate: CONFIG.control_serial.baudrate,
-    data: CONFIG.control_serial.bytesize,
-    parity: CONFIG.control_serial.parity,
-    stop: CONFIG.control_serial.stopbits,
-    open: false,
-    encoding: 'hex',
-    windowPort: CONFIG.control_serial.windowPort,
-    rpiPort: CONFIG.control_serial.rpiPort,
-
+    windowPort: CONFIG.serial.ctrl_windowPort,
+    rpiPort: CONFIG.serial.ctrl_rpiPort,
     // 소켓 설정
-    port: CONFIG.control_socket.port,
-    addr: CONFIG.control_socket.addr
+    port: CONFIG.socket.ctrl_port,
+    addr: CONFIG.socket.ctrl_addr
 };
 
 const mqttVar = {
     broker: 'mqtt://' + CONFIG.mqtt.broker,
-    port: 1883,
+    port: CONFIG.mqtt.port,
     username: CONFIG.mqtt.username,
     password: CONFIG.mqtt.password,
     clientId: 'bestin_ipark',
