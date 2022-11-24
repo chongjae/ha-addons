@@ -25,7 +25,7 @@ const energyVar = {
 
 const controlVar = {
     // 타입 정의
-    type: CONFIG.control_type, //'socket' , 'serial'
+    type: CONFIG.ctrl_type, //'socket' , 'serial'
     // 시리얼 설정
     windowPort: CONFIG.serial.ctrl_windowPort,
     rpiPort: CONFIG.serial.ctrl_rpiPort,
@@ -183,7 +183,7 @@ const CONST = {
 
         { deviceId: 'Gas', subId: '', commandHex1: Buffer.alloc(10, '0231023c000000000011', 'hex'), power: 'OFF' },
     ],
-    
+
     // 상태 Topic (/homenet/${deviceId}${subId}/${property}/state/ = ${value})
     // 명령어 Topic (/homenet/${deviceId}${subId}/${property}/command/ = ${value})
     TOPIC_PRFIX: mqttVar.topic_prefix,
@@ -286,12 +286,12 @@ if (energyVar.header == 'Serial') {
     log('INFO   initialize serial...')
     energy485 = new SerialPort({
         path: CONST.portEN,
-        baudRate: energyVar.rate,
-        dataBits: energyVar.data,
-        parity: energyVar.parity,
-        stopBits: energyVar.stop,
-        autoOpen: energyVar.open,
-        encoding: energyVar.encoding
+        baudRate: 9600,
+        dataBits: 8,
+        parity: 'none',
+        stopBits: 1,
+        autoOpen: false,
+        encoding: 'hex'
     });
     energy = energy485.pipe(new CustomParser());
     energy485.on('open', () => log('INFO   Success open energy port:', CONST.portEN));
@@ -321,12 +321,12 @@ if (controlVar.header == 'Serial') {
     log('INFO   initialize serial...')
     control485 = new SerialPort({
         path: CONST.portCTRL,
-        baudRate: controlVar.rate,
-        dataBits: controlVar.data,
-        parity: controlVar.parity,
-        stopBits: controlVar.stop,
-        autoOpen: controlVar.open,
-        encoding: controlVar.encoding
+        baudRate: 9600,
+        dataBits: 8,
+        parity: 'none',
+        stopBits: 1,
+        autoOpen: false,
+        encoding: 'hex'
     });
     control = control485.pipe(new CustomParser());
     control485.on('open', () => log('INFO   Success open control port:', CONST.portCTRL));
@@ -345,9 +345,9 @@ else {
         log('INFO   Success connected to control', /*"(" + controlVar.addr + ")"*/);
     });
     control485.on('error', (err) => {
-    if (err.code == "ETIMEDOUT") {
+        if (err.code == "ETIMEDOUT") {
             log("ERROR   Make sure socket is activated")
-    } else { log('ERROR   Control connection failed:', err.message) }
+        } else { log('ERROR   Control connection failed:', err.message) }
     });
     control = control485.pipe(new CustomParser());
 };
@@ -360,17 +360,14 @@ energy.on('data', function (data) {
         //log('WARNING   Packet stx not defined:', data.toString('hex', 0, 1), data.toString('hex', 1));
         return;
     }  // "베스틴 패킷은 길이가 불규칙 하여 가끔식 패킷이 튀는경우가 있음"
-    
-    if (data[2] == 0x1e) { 
-        switch (data[5]) {
-            case 0xe1: case 0xe2: case 0xe3: case 0xe4: case 0xe5:
-                var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
-                if (objFound && data.length === 30) {
-                    //조명, 콘센트 상태 정보
-                    updateStatus(objFound);
-                }
-                break;
+
+    if (data[2] == 0x1e) {
+        var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
+        if (objFound || data.length === 30) {
+            //조명, 콘센트 상태 정보
+            updateStatus(objFound);
         }
+        return;
     }
     // 딜레이
     commandProc();
@@ -399,19 +396,19 @@ control.on('data', function (data) {
         switch (data[1]) {
             case 0x31: case 0x61:
                 var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
-                if (objFound && data.length === 10) {
+                if (objFound || data.length === 10) {
                     //환기, 가스 상태 정보
                     updateStatus(objFound);
                 }
                 break;
         }
     }
-    if (data[2]== 0x10 & data[3]== 0x91) {
+    if (data[2] == 0x10 & data[3] == 0x91) {
         var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
-        if (objFound && data.length === 16) {
+        if (objFound || data.length === 16) {
             //난방 상태 정보
-            objFound.setTemp = ((data[7]&0x3f)+(data[7]&0x40>0)*0.5).toString(10);  // 설정 온도  
-            objFound.curTemp = ((data[9])/10.0).toString(10);  // 현재 온도
+            objFound.setTemp = ((data[7] & 0x3f) + (data[7] & 0x40 > 0) * 0.5).toString(10);  // 설정 온도  
+            objFound.curTemp = ((data[9]) / 10.0).toString(10);  // 현재 온도
             updateStatus(objFound);
         }
         return;
@@ -552,4 +549,4 @@ const commandProc = () => {
 setTimeout(() => { mqttReady = true; log('INFO   MQTT ready...') }, CONST.mqttDelay);
 setInterval(commandProc, CONST.gapDelay);
 
-    
+
