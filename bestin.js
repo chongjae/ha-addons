@@ -374,7 +374,7 @@ energy.on('data', function (data) {
 
     if (data[2] == 0x1e && data[3] == 0x81) {     //조명 및 콘센트 전원 '명령응답'
         const ack1 = Buffer.alloc(1);
-        data.copy(ack1, 0, 1, 3);
+        data.copy(ack1, 0, 1, 2, 3);
         var objFoundIdx = queue.findIndex(obj => obj.commandHex.includes(ack1));
         if (objFoundIdx > -1) {
             log('INFO   Success command #Set State=', retryCount);
