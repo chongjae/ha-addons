@@ -85,6 +85,27 @@ switch:
   state_topic: "homenet/Outlet5/power2/state"
   icon: mdi:power-socket-de
 
+- name: "standby_power_1"
+  command_topic: "homenet/StandbyPw1/power/command"
+  state_topic: "homenet/StandbyPw1/power/state"
+  icon: mdi:power-socket-de
+- name: "standby_power_2"
+  command_topic: "homenet/StandbyPw2/power/command"
+  state_topic: "homenet/StandbyPw2/power/state"
+  icon: mdi:power-socket-de
+- name: "standby_power_3"
+  command_topic: "homenet/StandbyPw3/power/command"
+  state_topic: "homenet/StandbyPw3/power/state"
+  icon: mdi:power-socket-de
+- name: "standby_power_4"
+  command_topic: "homenet/StandbyPw4/power/command"
+  state_topic: "homenet/StandbyPw4/power/state"
+  icon: mdi:power-socket-de
+- name: "standby_power_5"
+  command_topic: "homenet/StandbyPw5/power/command"
+  state_topic: "homenet/StandbyPw5/power/state"
+  icon: mdi:power-socket-de
+
 - name: "gas"
   command_topic: "homenet/Gas/power/command"
   state_topic: "homenet/Gas/power/state"
