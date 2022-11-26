@@ -407,9 +407,13 @@ control.on('data', function (data) {
         var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
         if (objFound || data.length === 16) {
             //난방 상태 정보
-            objFound.setTemp = ((data[7] & 0x3f) + (data[7] & 0x40 > 0) * 0.5).toString(10);  // 설정 온도  
-            objFound.curTemp = ((data[9]) / 10.0).toString(10);  // 현재 온도
-            updateStatus(objFound);
+            if (objFound) {
+                objFound.setTemp = ((data[7] & 0x3f) + (data[7] & 0x40 > 0) * 0.5).toString(10);  // 설정 온도  
+                objFound.curTemp = ((data[9]) / 10.0).toString(10);  // 현재 온도
+                updateStatus(objFound);
+            } else {
+                return undefined;
+            }
         }
         //return;
     }
@@ -445,7 +449,12 @@ control.on('data', function (data) {
 
 // MQTT로 HA에 상태값 전송
 var updateStatus = (obj) => {
-    var arrStateName = Object.keys(obj);
+    if (obj) {
+        var arrStateName = Object.keys(obj);
+    } else {
+        return null;
+    }
+    
     // 상태값이 아닌 항목들은 제외 [deviceId, subId, stateHex, commandHex, sentTime]
     const arrFilter = ['deviceId', 'subId', 'stateHex', 'commandHex1', 'commandHex2', 'sentTime'];
     arrStateName = arrStateName.filter(stateName => !arrFilter.includes(stateName));
@@ -547,5 +556,4 @@ const commandProc = () => {
 
 setTimeout(() => { mqttReady = true; log('INFO   MQTT ready...') }, CONST.mqttDelay);
 setInterval(commandProc, CONST.gapDelay);
-
 
