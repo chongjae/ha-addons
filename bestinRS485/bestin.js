@@ -367,7 +367,7 @@ energy.on('data', function (data) {
             //조명, 콘센트 상태 정보
             updateStatus(objFound);
         }
-        return;
+        //return;
     }
     // 딜레이
     commandProc();
@@ -381,7 +381,7 @@ energy.on('data', function (data) {
             queue.splice(objFoundIdx, 1);
             retryCount = 0;
         }
-        return;
+        //return;
     }
 });
 
@@ -407,11 +407,11 @@ control.on('data', function (data) {
         var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
         if (objFound || data.length === 16) {
             //난방 상태 정보
-            //objFound.setTemp = ((data[7] & 0x3f) + (data[7] & 0x40 > 0) * 0.5).toString(10);  // 설정 온도  
+            objFound.setTemp = ((data[7] & 0x3f) + (data[7] & 0x40 > 0) * 0.5).toString(10);  // 설정 온도  
             objFound.curTemp = ((data[9]) / 10.0).toString(10);  // 현재 온도
             updateStatus(objFound);
         }
-        return;
+        //return;
     }
     // 딜레이
     commandProc();
@@ -437,7 +437,7 @@ control.on('data', function (data) {
             queue.splice(objFoundIdx, 1);
             retryCount = 0;
         }
-        return;
+        //return;
     }
 });
 
