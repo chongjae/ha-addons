@@ -61,12 +61,16 @@ const CONST = {
     // 디바이스 Hex코드
     DEVICE_STATE: [
         //// 각 아이파크 조명 하위 4바이트 값이 다름 
-        { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1C0', 'hex'), power1: 'ON', power2: 'ON', power3: 'ON', power4: 'ON' },
+        { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1CF', 'hex'), power1: 'ON', power2: 'ON', power3: 'ON', power4: 'ON' },//
         { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1C8', 'hex'), power1: 'OFF', power2: 'OFF', power3: 'OFF', power4: 'ON' },
         { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1C4', 'hex'), power1: 'OFF', power2: 'OFF', power3: 'ON', power4: 'OFF' },
         { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1C2', 'hex'), power1: 'OFF', power2: 'ON', power3: 'OFF', power4: 'OFF' },
         { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1C1', 'hex'), power1: 'ON', power2: 'OFF', power3: 'OFF', power4: 'OFF' },
-        { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1CF', 'hex'), power1: 'OFF', power2: 'OFF', power3: 'OFF', power4: 'OFF' },
+        { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1CB', 'hex'), power1: 'ON', power2: 'ON', power3: 'OFF', power4: 'ON' },
+        { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1CD', 'hex'), power1: 'ON', power2: 'OFF', power3: 'ON', power4: 'ON' },
+        { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1CE', 'hex'), power1: 'OF', power2: 'ON', power3: 'ON', power4: 'ON' },
+        { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1C1', 'hex'), power1: 'OFF', power2: 'OFF', power3: 'OFF', power4: 'OFF' },//
+
         { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1B7', 'hex'), power1: 'ON', power2: 'ON', power3: 'ON' },
         { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1B4', 'hex'), power1: 'OFF', power2: 'OFF', power3: 'ON' },
         { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1B3', 'hex'), power1: 'OFF', power2: 'ON', power3: 'OFF' },
@@ -116,30 +120,26 @@ const CONST = {
         { deviceId: 'Thermo', subId: '1', stateHex: Buffer.alloc(2, '0101', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
         { deviceId: 'Thermo', subId: '2', stateHex: Buffer.alloc(2, '0202', 'hex'), power: 'off', setTemp: '', curTemp: '' },
         { deviceId: 'Thermo', subId: '2', stateHex: Buffer.alloc(2, '0201', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '2', stateHex: Buffer.alloc(2, '0207', 'hex'), power: 'off', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '2', stateHex: Buffer.alloc(2, '0211', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
         { deviceId: 'Thermo', subId: '3', stateHex: Buffer.alloc(2, '0302', 'hex'), power: 'off', setTemp: '', curTemp: '' },
         { deviceId: 'Thermo', subId: '3', stateHex: Buffer.alloc(2, '0301', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '3', stateHex: Buffer.alloc(2, '0307', 'hex'), power: 'off', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '3', stateHex: Buffer.alloc(2, '0311', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
         { deviceId: 'Thermo', subId: '4', stateHex: Buffer.alloc(2, '0402', 'hex'), power: 'off', setTemp: '', curTemp: '' },
         { deviceId: 'Thermo', subId: '4', stateHex: Buffer.alloc(2, '0401', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '4', stateHex: Buffer.alloc(2, '0402', 'hex'), power: 'off', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '4', stateHex: Buffer.alloc(2, '0411', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
         { deviceId: 'Thermo', subId: '5', stateHex: Buffer.alloc(2, '0502', 'hex'), power: 'off', setTemp: '', curTemp: '' },
         { deviceId: 'Thermo', subId: '5', stateHex: Buffer.alloc(2, '0501', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
 
         { deviceId: 'Gas', subId: '', stateHex: Buffer.alloc(3, '800000', 'hex'), power: 'OFF' },
         { deviceId: 'Gas', subId: '', stateHex: Buffer.alloc(3, '800100', 'hex'), power: 'ON' }
     ],
-
+    
     DEVICE_COMMAND: [
         { deviceId: 'Light', subId: '1', commandHex1: Buffer.alloc(13, '02310d01d701010000000000f5', 'hex'), power1: 'OFF' },
         { deviceId: 'Light', subId: '1', commandHex1: Buffer.alloc(13, '02310d01d00181000000000476', 'hex'), power1: 'ON' },
         { deviceId: 'Light', subId: '1', commandHex1: Buffer.alloc(13, '02310d015f010200000000006a', 'hex'), power2: 'OFF' },
         { deviceId: 'Light', subId: '1', commandHex1: Buffer.alloc(13, '02310d015801820000000004e9', 'hex'), power2: 'ON' },
         { deviceId: 'Light', subId: '1', commandHex1: Buffer.alloc(13, '02310d0163010400000000006c', 'hex'), power3: 'OFF' },
-        { deviceId: 'Light', subId: '1', commandHex1: Buffer.alloc(13, '02310d015c01840000000004ef', 'hex'), power3: 'ON' },   //방1
+        { deviceId: 'Light', subId: '1', commandHex1: Buffer.alloc(13, '02310d015c01840000000004ef', 'hex'), power3: 'ON' },  
+        { deviceId: 'Light', subId: '1', commandHex1: Buffer.alloc(13, '02310D01330108000000000020', 'hex'), power4: 'OFF' },
+        { deviceId: 'Light', subId: '1', commandHex1: Buffer.alloc(13, '02310D012B0188000000000494', 'hex'), power4: 'ON' },   //방1
         { deviceId: 'Light', subId: '2', commandHex1: Buffer.alloc(13, '02310d019302010000000000b8', 'hex'), power1: 'OFF' },
         { deviceId: 'Light', subId: '2', commandHex1: Buffer.alloc(13, '02310d018c028100000000043f', 'hex'), power1: 'ON' },
         { deviceId: 'Light', subId: '2', commandHex1: Buffer.alloc(13, '02310d018402020000000000c4', 'hex'), power2: 'OFF' },
@@ -381,7 +381,7 @@ else {
 // 홈넷에서 SerialPort로 상태 정보 수신
 energy.on('data', function (data) {
     lastReceive = new Date().getTime();
-
+    //console.log('Receive interval: ', (new Date().getTime()) - lastReceive, 'ms ->', data.toString('hex'));
     if (data[0] != 0x02) return;
 
     switch (data[3]) {
@@ -424,7 +424,7 @@ control.on('data', function (data) {
                 var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
                 if (objFound) {
                     //난방 상태 정보
-                    if (data[6] == 0x01|data[6]== 0x11) {
+                    if (data[6] == 0x01|data[6]== 0x11|data[6]==0x07) { //0x07: 대기?, 0x01: 켜짐, 0x11: 켜짐
                         objFound.setTemp = ((data[7] & 0x3f) + (data[7] & 0x40 > 0) * 0.5).toString(10);  // 설정 온도  
                         objFound.curTemp = ((data[9]) / 10.0).toString(10);  // 현재 온도
                         updateStatus(objFound);
