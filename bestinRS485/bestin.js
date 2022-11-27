@@ -9,6 +9,8 @@ const util = require('util');
 const net = require('net');
 const SerialPort = require('serialport').SerialPort;
 const mqtt = require('mqtt');
+var Transform = require('stream').Transform;
+util.inherits(CustomParser, Transform);
 
 const CONFIG = require('/data/options.json');
 
@@ -58,23 +60,45 @@ const CONST = {
     MSG_PREFIX: [0x02],
     // 디바이스 Hex코드
     DEVICE_STATE: [
+        //// 각 아이파크 조명 하위 4바이트 값이 다름 
+        { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1C0', 'hex'), power1: 'ON', power2: 'ON', power3: 'ON', power4: 'ON' },
+        { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1C8', 'hex'), power1: 'OFF', power2: 'OFF', power3: 'OFF', power4: 'ON' },
+        { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1C4', 'hex'), power1: 'OFF', power2: 'OFF', power3: 'ON', power4: 'OFF' },
+        { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1C2', 'hex'), power1: 'OFF', power2: 'ON', power3: 'OFF', power4: 'OFF' },
+        { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1C1', 'hex'), power1: 'ON', power2: 'OFF', power3: 'OFF', power4: 'OFF' },
+        { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1CF', 'hex'), power1: 'OFF', power2: 'OFF', power3: 'OFF', power4: 'OFF' },
         { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1B7', 'hex'), power1: 'ON', power2: 'ON', power3: 'ON' },
         { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1B4', 'hex'), power1: 'OFF', power2: 'OFF', power3: 'ON' },
         { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1B3', 'hex'), power1: 'OFF', power2: 'ON', power3: 'OFF' },
         { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1B1', 'hex'), power1: 'ON', power2: 'OFF', power3: 'OFF' },
         { deviceId: 'Light', subId: '1', stateHex: Buffer.alloc(2, 'E1B0', 'hex'), power1: 'OFF', power2: 'OFF', power3: 'OFF' },
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
         { deviceId: 'Light', subId: '2', stateHex: Buffer.alloc(2, 'E223', 'hex'), power1: 'ON', power2: 'ON' },
         { deviceId: 'Light', subId: '2', stateHex: Buffer.alloc(2, 'E220', 'hex'), power1: 'OFF', power2: 'OFF' },
         { deviceId: 'Light', subId: '2', stateHex: Buffer.alloc(2, 'E222', 'hex'), power1: 'OFF', power2: 'ON' },
         { deviceId: 'Light', subId: '2', stateHex: Buffer.alloc(2, 'E221', 'hex'), power1: 'ON', power2: 'OFF' },
+
+        //// 각 아이파크 조명 하위 4바이트 값이 다름 
         { deviceId: 'Light', subId: '3', stateHex: Buffer.alloc(2, 'E323', 'hex'), power1: 'ON', power2: 'ON' },
         { deviceId: 'Light', subId: '3', stateHex: Buffer.alloc(2, 'E320', 'hex'), power1: 'OFF', power2: 'OFF' },
         { deviceId: 'Light', subId: '3', stateHex: Buffer.alloc(2, 'E322', 'hex'), power1: 'OFF', power2: 'ON' },
         { deviceId: 'Light', subId: '3', stateHex: Buffer.alloc(2, 'E321', 'hex'), power1: 'ON', power2: 'OFF' },
+        { deviceId: 'Light', subId: '3', stateHex: Buffer.alloc(2, 'E3A3', 'hex'), power1: 'ON', power2: 'ON' },
+        { deviceId: 'Light', subId: '3', stateHex: Buffer.alloc(2, 'E3A0', 'hex'), power1: 'OFF', power2: 'OFF' },
+        { deviceId: 'Light', subId: '3', stateHex: Buffer.alloc(2, 'E3A2', 'hex'), power1: 'OFF', power2: 'ON' },
+        { deviceId: 'Light', subId: '3', stateHex: Buffer.alloc(2, 'E3A1', 'hex'), power1: 'ON', power2: 'OFF' },
+
         { deviceId: 'Light', subId: '4', stateHex: Buffer.alloc(2, 'E423', 'hex'), power1: 'ON', power2: 'ON' },
         { deviceId: 'Light', subId: '4', stateHex: Buffer.alloc(2, 'E420', 'hex'), power1: 'OFF', power2: 'OFF' },
         { deviceId: 'Light', subId: '4', stateHex: Buffer.alloc(2, 'E422', 'hex'), power1: 'OFF', power2: 'ON' },
         { deviceId: 'Light', subId: '4', stateHex: Buffer.alloc(2, 'E421', 'hex'), power1: 'ON', power2: 'OFF' },
+        { deviceId: 'Light', subId: '4', stateHex: Buffer.alloc(2, 'E4A3', 'hex'), power1: 'ON', power2: 'ON' },
+        { deviceId: 'Light', subId: '4', stateHex: Buffer.alloc(2, 'E4A0', 'hex'), power1: 'OFF', power2: 'OFF' },
+        { deviceId: 'Light', subId: '4', stateHex: Buffer.alloc(2, 'E4A2', 'hex'), power1: 'OFF', power2: 'ON' },
+        { deviceId: 'Light', subId: '4', stateHex: Buffer.alloc(2, 'E4A1', 'hex'), power1: 'ON', power2: 'OFF' },
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
         { deviceId: 'Light', subId: '5', stateHex: Buffer.alloc(2, 'E523', 'hex'), power1: 'ON', power2: 'ON' },
         { deviceId: 'Light', subId: '5', stateHex: Buffer.alloc(2, 'E520', 'hex'), power1: 'OFF', power2: 'OFF' },
         { deviceId: 'Light', subId: '5', stateHex: Buffer.alloc(2, 'E522', 'hex'), power1: 'OFF', power2: 'ON' },
@@ -84,19 +108,26 @@ const CONST = {
         { deviceId: 'Fan', subId: '', stateHex: Buffer.alloc(3, '000101', 'hex'), power: 'ON', preset: 'low' },
         { deviceId: 'Fan', subId: '', stateHex: Buffer.alloc(3, '000102', 'hex'), power: 'ON', preset: 'medium' },
         { deviceId: 'Fan', subId: '', stateHex: Buffer.alloc(3, '000103', 'hex'), power: 'ON', preset: 'high' },
-        //{ deviceId: 'Fan', subId: '', stateHex: Buffer.alloc(2, '0001', 'hex'), power: 'ON', preset: 'nature OFF' },
-        //{ deviceId: 'Fan', subId: '', stateHex: Buffer.alloc(2, '0011', 'hex'), power: 'ON', preset: 'nature ON' },
+        //{ deviceId: 'Fan', subId: '', stateHex: Buffer.alloc(2, '0001', 'hex'), preset: 'nature OFF' },
+        //{ deviceId: 'Fan', subId: '', stateHex: Buffer.alloc(2, '0011', 'hex'), preset: 'nature ON' },
 
-        { deviceId: 'Thermo', subId: '1', stateHex: Buffer.alloc(2, '0102', 'hex'), power: 'OFF', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '1', stateHex: Buffer.alloc(2, '0111', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '2', stateHex: Buffer.alloc(2, '0202', 'hex'), power: 'OFF', setTemp: '', curTemp: '' },
+        //// 각 아이파크 난방 on,off(hexadecimal) 값이 다름
+        { deviceId: 'Thermo', subId: '1', stateHex: Buffer.alloc(2, '0102', 'hex'), power: 'off', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '1', stateHex: Buffer.alloc(2, '0101', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '2', stateHex: Buffer.alloc(2, '0202', 'hex'), power: 'off', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '2', stateHex: Buffer.alloc(2, '0201', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '2', stateHex: Buffer.alloc(2, '0207', 'hex'), power: 'off', setTemp: '', curTemp: '' },
         { deviceId: 'Thermo', subId: '2', stateHex: Buffer.alloc(2, '0211', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '3', stateHex: Buffer.alloc(2, '0302', 'hex'), power: 'OFF', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '3', stateHex: Buffer.alloc(2, '0302', 'hex'), power: 'off', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '3', stateHex: Buffer.alloc(2, '0301', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '3', stateHex: Buffer.alloc(2, '0307', 'hex'), power: 'off', setTemp: '', curTemp: '' },
         { deviceId: 'Thermo', subId: '3', stateHex: Buffer.alloc(2, '0311', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '4', stateHex: Buffer.alloc(2, '0402', 'hex'), power: 'OFF', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '4', stateHex: Buffer.alloc(2, '0402', 'hex'), power: 'off', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '4', stateHex: Buffer.alloc(2, '0401', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '4', stateHex: Buffer.alloc(2, '0402', 'hex'), power: 'off', setTemp: '', curTemp: '' },
         { deviceId: 'Thermo', subId: '4', stateHex: Buffer.alloc(2, '0411', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '5', stateHex: Buffer.alloc(2, '0502', 'hex'), power: 'OFF', setTemp: '', curTemp: '' },
-        { deviceId: 'Thermo', subId: '5', stateHex: Buffer.alloc(2, '0511', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '5', stateHex: Buffer.alloc(2, '0502', 'hex'), power: 'off', setTemp: '', curTemp: '' },
+        { deviceId: 'Thermo', subId: '5', stateHex: Buffer.alloc(2, '0501', 'hex'), power: 'heat', setTemp: '', curTemp: '' },
 
         { deviceId: 'Gas', subId: '', stateHex: Buffer.alloc(3, '800000', 'hex'), power: 'OFF' },
         { deviceId: 'Gas', subId: '', stateHex: Buffer.alloc(3, '800100', 'hex'), power: 'ON' }
@@ -192,9 +223,6 @@ const CONST = {
 };
 
 // 베스틴 홈넷용 시리얼 통신 파서 : 메시지 길이나 구분자가 불규칙하여 별도 파서 정의
-var Transform = require('stream').Transform;
-util.inherits(CustomParser, Transform);
-
 function CustomParser(options) {
     if (!(this instanceof CustomParser))
         return new CustomParser(options);
@@ -219,14 +247,12 @@ CustomParser.prototype._transform = function (chunk, encoding, done) {
         // 메시지 종류에 따른 메시지 길이 파악
         else if (this._msgTypeFlag) {
             switch (chunk[i]) {
-                case 0x1e: case 0x91: case 0x81: //조명, 콘센트(0x91: 쿼리, 0x81: 명령응답)
-                    this._msgLength = 30; break;
-                case 0x82: case 0x3c: case 0x81: case 0x83: case 0x87: case 0x80: case 0x00: //가스(0x82: 명령응답, 0x80: 응답, 0x00: 쿼리)/환기(0x81,83,87: 명령응답)
+                case 0x80: case 0x81: case 0x83: case 0x84: case 0x87: case 0x82:  //가스(0x82: 명령응답, 0x80: 응답, 0x00: 쿼리, 0x02: 월패드 명령)/환기(0x80: 응답, 0x81,83,84,87: 명령응답(전원on,off/ 스피드/ 타이머/ 자연))
                     this._msgLength = 10; break;
-                case 0x10: case 0x92: case 0x10: case 0x91://난방(0x10,92: 명령응답, 0x10,91: 응답)
+                case 0x91: case 0x92://난방(0x10,92: 명령응답, 0x10,91: 응답)
                     this._msgLength = 16; break;
-                case 0x07: case 0x11: //난방(0x07,11: 쿼리)
-                    this._msgLength = 7; break;
+                case 0x81: case 0x91:
+                    this._msgLength = 30; break;
                 default:
                     this._msgLength = 30;
             }
@@ -258,7 +284,7 @@ var queue = new Array();
 var retryCount = 0;
 
 // MQTT-Broker 연결 
-const client = mqtt.connect('mqtt://'+mqttVar.broker, {
+const client = mqtt.connect('mqtt://' + mqttVar.broker, {
     port: mqttVar.port,
     username: mqttVar.username,
     password: mqttVar.password,
@@ -356,71 +382,68 @@ else {
 energy.on('data', function (data) {
     lastReceive = new Date().getTime();
 
-    if (data[0] != 0x02) {
-        //log('WARNING   Packet stx not defined:', data.toString('hex', 0, 1), data.toString('hex', 1));
-        return;
-    }  // "베스틴 패킷은 길이가 불규칙 하여 가끔식 패킷이 튀는경우가 있음"
+    if (data[0] != 0x02) return;
 
-    if (data[2] == 0x1e && data[3] == 0x91) {
-        var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
-        if (objFound || data.length === 30) {
-            //조명, 콘센트 상태 정보
-            updateStatus(objFound);
-        }
-        //return;
-    }
-    // 딜레이
-    commandProc();
-
-    if (data[2] == 0x1e && data[3] == 0x81) {     //조명 및 콘센트 전원 '명령응답'
-        const ack1 = Buffer.alloc(1);
-        data.copy(ack1, 0, 1, 2, 3);
-        var objFoundIdx = queue.findIndex(obj => obj.commandHex1?.includes(ack1));
-        if (objFoundIdx > -1) {
-            log('INFO   Success command #Set State=', retryCount);
-            queue.splice(objFoundIdx, 1);
-            retryCount = 0;
-        }
-        //return;
+    switch (data[3]) {
+        case 0x91:
+            var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
+            if (objFound) {
+                //조명, 콘센트 상태 정보
+                updateStatus(objFound);
+            }
+            break;
+        case 0x81:
+            const ack1 = Buffer.alloc(1);
+            data.copy(ack1, 0, 1, 3);
+            var objFoundIdx = queue.findIndex(obj => obj.commandHex1?.includes(ack1));
+            if (objFoundIdx > -1) {
+                log('INFO   Success command #Set State=', retryCount);
+                queue.splice(objFoundIdx, 1);
+                retryCount = 0;
+            }
+            break;
     }
 });
 
 control.on('data', function (data) {
     lastReceive = new Date().getTime();
-
-    if (data[0] != 0x02) {
-        //log('WARNING   Packet stx not defined:', data.toString('hex', 0, 1), data.toString('hex', 1));
-        return;
-    }
-    if (data[2] == 0x80) {
-        switch (data[1]) {
-            case 0x31: case 0x61:
-                var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
-                if (objFound || data.length === 10) {
-                    //환기, 가스 상태 정보
-                    updateStatus(objFound);
-                }
-                break;
-        }
-    }
-    if (data[2] == 0x10 && data[3] == 0x91) {
-        var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
-        if (objFound || data.length === 16) {
-            //난방 상태 정보
-            if (objFound) {
-                objFound.setTemp = ((data[7] & 0x3f) + (data[7] & 0x40 > 0) * 0.5).toString(10);  // 설정 온도  
-                objFound.curTemp = ((data[9]) / 10.0).toString(10);  // 현재 온도
-                updateStatus(objFound);
-            } else {
-                return undefined;
-            }
-        }
-        //return;
-    }
-    // 딜레이
-    commandProc();
-
+    if (data[0] != 0x02) return;
+    //console.log('Receive interval: ', (new Date().getTime()) - lastReceive, 'ms ->', data.toString('hex'));
     switch (data[2]) {
+        // 가스, 환기 상태정보
+        case 0x80:
+            var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
+            if (objFound) {
+                updateStatus(objFound);
+            }
+            break;
+        // 난방 상태,제어
+        case 0x10:
+            if (data[3] == 0x91) {
+                var objFound = null;
+                var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
+                if (objFound) {
+                    //난방 상태 정보
+                    if (data[6] == 0x01|data[6]== 0x11) {
+                        objFound.setTemp = ((data[7] & 0x3f) + (data[7] & 0x40 > 0) * 0.5).toString(10);  // 설정 온도  
+                        objFound.curTemp = ((data[9]) / 10.0).toString(10);  // 현재 온도
+                        updateStatus(objFound);
+                    } else {
+                        return undefined;
+                    }
+                }
+            } else (data[3] == 0x92); {
+                const ack1 = Buffer.alloc(1);
+                data.copy(ack1, 0, 1, 3);
+                var objFoundIdx = queue.findIndex(obj => obj.commandHex2?.includes(ack1));
+                if (objFoundIdx > -1) {
+                    log('INFO   Success command #Set State=', retryCount);
+                    queue.splice(objFoundIdx, 1);
+                    retryCount = 0;
+                }
+            }
+            break;
+        // 제어명령
         case 0x81: case 0x82: case 0x83: case 0x87: //가스: 0x82 환기: 0x81,83,87
             const ack2 = Buffer.alloc(1);
             data.copy(ack2, 0, 1, 2);
@@ -431,17 +454,6 @@ control.on('data', function (data) {
                 retryCount = 0;
             }
             break;
-    }
-    if (data[2] == 0x10 && data[3] == 0x92) {  //난방: 0x10,92
-        const ack2 = Buffer.alloc(1);
-        data.copy(ack2, 0, 1, 2, 3);
-        var objFoundIdx = queue.findIndex(obj => obj.commandHex2?.includes(ack2));
-        if (objFoundIdx > -1) {
-            log('INFO   Success command #Set State=', retryCount);
-            queue.splice(objFoundIdx, 1);
-            retryCount = 0;
-        }
-        //return;
     }
 });
 
@@ -454,7 +466,7 @@ var updateStatus = (obj) => {
     } else {
         return null;
     }
-    
+
     // 상태값이 아닌 항목들은 제외 [deviceId, subId, stateHex, commandHex, sentTime]
     const arrFilter = ['deviceId', 'subId', 'stateHex', 'commandHex1', 'commandHex2', 'sentTime'];
     arrStateName = arrStateName.filter(stateName => !arrFilter.includes(stateName));
