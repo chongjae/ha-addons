@@ -424,7 +424,7 @@ control.on('data', function (data) {
                 var objFound = CONST.DEVICE_STATE.find(obj => data.includes(obj.stateHex));
                 if (objFound) {
                     //난방 상태 정보
-                    if (data[6] == 0x01|data[6]== 0x11|data[6]==0x07) { //0x07: 대기?, 0x01: 켜짐, 0x11: 켜짐
+                    if (data[6] == 0x01|data[6]== 0x11|data[6]==0x07|data[6]==0x02) { //0x07: 대기?, 0x01: 켜짐, 0x11: 켜짐
                         objFound.setTemp = ((data[7] & 0x3f) + (data[7] & 0x40 > 0) * 0.5).toString(10);  // 설정 온도  
                         objFound.curTemp = ((data[9]) / 10.0).toString(10);  // 현재 온도
                         updateStatus(objFound);
