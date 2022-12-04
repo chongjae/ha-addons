@@ -447,20 +447,20 @@ if (smartVar.enable == 'on') {
             encoding: 'hex'
         });
         smart2 = smart2485.pipe(new CustomParser());
-        smart2485.on('open', () => log('INFO   Success open smart1 port:', CONST.portSEND));
-        smart2485.on('close', () => log('WARNING   Close smart1 port:', CONST.portSEND));
+        smart2485.on('open', () => log('INFO   Success open smart2 port:', CONST.portSEND));
+        smart2485.on('close', () => log('WARNING   Close smart2 port:', CONST.portSEND));
         smart2485.open((err) => {
             if (err) {
-                return log('ERROR   Failed to open smart1 port:', err.message);
+                return log('ERROR   Failed to open smart2 port:', err.message);
             }
         });
     }
     else {
-        log('INFO   Smart1 connection type: Socket')
+        log('INFO   Smart connection type: Socket')
         log('INFO   initialize socket...')
         smart1485 = new net.Socket();
         smart1485.connect(smartVar.recv_port, smartVar.recv_addr, function () {
-            log('INFO   Success connected to smart1', "(" + smartVar.recv_addr, smartVar.recv_port, + ")");
+            log('INFO   Success connected to smart1', "(" + smartVar.recv_addr, smartVar.recv_port + ")");
         });
         smart1485.on('error', (err) => {
             if (err.code == "ETIMEDOUT") {
@@ -659,19 +659,20 @@ if (smartVar.enable == 'on') {
         //console.log('Smart2>> Receive interval: ', (new Date().getTime()) - lastReceive, 'ms ->', data.toString('hex'));
 
         if (data[0] != 0x02) return;
-        var objFoundIdx = ((CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Elevator')) && (queue.findIndex(obj => obj.commandHex.includes(ack3))));
-        objFoundIdx.commandHex[4] = data[4].toString();  //timestamp
-        data = objFoundIdx.commandHex;
+        var objFound = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Elevator');
+        objFound.commandHex[4] = (data[4] & 0xff).toString();  //timestamp
+        data = objFound.commandHex;
         sum = 0x03;
         for (var i = 0; i < 11; i++) {
             sum = ((data[i] ^ sum) + 1) & 0xff
         }
-        objFoundIdx.commandHex[11] = sum; // 마지막 Byte는 XOR SUM
+        objFound.commandHex[11] = sum; // 마지막 Byte는 XOR SUM
 
         switch (data[5]) {
             case 0x10: case 0x20:
-                const ack3 = Buffer.alloc(1);
+                const ack3 = Buffer.alloc(6);
                 data.copy(ack3, 0, 1, 5);
+                var objFoundIdx = ((CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Elevator')) && (queue.findIndex(obj => obj.commandHex.includes(ack3))));
                 if (objFoundIdx > -1) {
                     log('INFO   Success command #Set State=', retryCount);
                     queue.splice(objFoundIdx, 1);
