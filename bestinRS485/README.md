@@ -5,7 +5,7 @@
 ## About
 HAKorea 님의 addons 저장소를 참고하여 작성하였습니다.
 
-## Version : 2022.11.20
+## Version : 2022.12.05
 
 ## Installation
 
