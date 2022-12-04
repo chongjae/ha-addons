@@ -27,6 +27,7 @@ Add-on configuration:
 ```yaml
 sendDelay: 80 
 gapDelay: 30 
+retryCount: 20
 
 energy_type:
 'serial' or 'socket'
@@ -57,6 +58,7 @@ mqtt:
 sendDelay-> 실제 패킷을 전송하는 딜레이를 의미합니다. (ms)
 gapDelay-> 실제 패킷을 전송한후 명령응답으로 넘어가는 사이 딜레이를 의미합니다. (ms)
 (딜레이가 길어질수록 명령을 보낸후 명령응답을 확인하는 시간이 늘어납니다. 반대로 너무줄이면 명령이 성공하지도 않았는데 명령응답으로 처리될 수 있습니다.)
+retryCount-> 설정한 횟수만큼 명령을 시도합니다.(ack(응답) 메시지가 오지 않는 경우 방지)
 
 ### Option: `type` (필수)
 통신 방법: serial 또는 socket 
