@@ -36,6 +36,20 @@ const controlVar = {
     addr: CONFIG.socket.ctrl_addr
 };
 
+const smartVar = {
+    enable: CONFIG.smart_enable,
+    type: CONFIG.smart_type,
+
+    recv_windowPort: CONFIG.serial.recv_windowPort,
+    recv_rpiPort: CONFIG.serial.recv_rpiPort,
+    send_windowPort: CONFIG.serial.send_windowPort,
+    send_rpiPort: CONFIG.serial.send_rpiPort,
+
+    recv_port: CONFIG.socket.recv_port,
+    recv_addr: CONFIG.socket.recv_addr,
+    send_port: CONFIG.socket.send_port,
+    send_addr: CONFIG.socket.send_addr
+};
 const mqttVar = {
     broker: CONFIG.mqtt.broker,
     port: CONFIG.mqtt.port,
@@ -51,6 +65,8 @@ const CONST = {
     // 포트이름 설정
     portEN: process.platform.startsWith('win') ? energyVar.windowPort : energyVar.rpiPort,
     portCTRL: process.platform.startsWith('win') ? controlVar.windowPort : controlVar.rpiPort,
+    portRECV: process.platform.startsWith('win') ? smartVar.recv_windowPort : smartVar.recv_rpiPort,
+    portSEND: process.platform.startsWith('win') ? smartVar.send_windowPort : smartVar.send_rpiPort,
     // SerialPort Delay(ms)
     sendDelay: CONFIG.sendDelay,  //실제 명령 패킷전송 딜레이
     gapDelay: CONFIG.gapDelay,  //명령 전송후 ack메세지 검사 딜레이
@@ -98,7 +114,13 @@ const CONST = {
         [0x02, 0x61, 0x03], // Fan Status(preset) Command Packet
         [0x02, 0x61, 0x83], // Fan Status(preset) Action Packet
         [0x02, 0x61, 0x07], // Fan Status(Nature) Command Packet
-        [0x02, 0x61, 0x87]], // Fan Status(Nature) Action Packet
+        [0x02, 0x61, 0x87], // Fan Status(Nature) Action Packet
+
+        [0x02, 0xC1, 0x06, 0x11], // Elevator_Smart1_Packet
+        [0x02, 0xC1, 0x13, 0x13], // Elevator_Smart1_Status_Packet
+        [0x02, 0xC1, 0x1B, 0x23], // TBD
+        [0x02, 0xC1, 0x0C] // Elevator_Smart2_Packet
+        ],
 
     // 디바이스 Hex코드
     DEVICE_STATE: [
@@ -106,7 +128,8 @@ const CONST = {
         { deviceId: 'Gas', subId: '' },
         { deviceId: 'Doorlock', subId: '' },
         { deviceId: 'Fan', subId: '' },
-        { deviceId: 'Thermo', subId: '' }
+        { deviceId: 'Thermo', subId: '' },
+        { deviceId: 'Elevator', subId: '' }
     ],
 
     DEVICE_COMMAND: [
@@ -193,6 +216,7 @@ const CONST = {
 
         { deviceId: 'Gas', subId: '', commandHex: Buffer.alloc(10, '0231020000000000003D', 'hex'), power: 'OFF' },
         { deviceId: 'Doorlock', subId: '', commandHex: Buffer.alloc(10, '0241020001000000004E', 'hex'), power: 'ON' },
+        { deviceId: 'Elevator', subId: '', commandHex: Buffer.alloc(12, '02C10C91FF100100020102FF', 'hex'), power: 'ON' },
     ],
 
     // 상태 Topic (/homenet/${deviceId}${subId}/${property}/state/ = ${value})
@@ -292,7 +316,7 @@ var homeStatus = {};
 var lastReceive = new Date().getTime();
 var mqttReady = false;
 var queue = new Array();
-var packet = {};
+//var packet = {};
 var retryCount = 0;
 
 // MQTT-Broker 연결 
@@ -390,6 +414,73 @@ else {
     control = control485.pipe(new CustomParser());
 };
 
+
+// Smart
+if (smartVar.enable == 'on') {
+    if (smartVar.type == 'serial') {
+        log('INFO   Smart connection type: Serial')
+        log('INFO   initialize serial...')
+        smart1485 = new SerialPort({
+            path: CONST.portRECV,
+            baudRate: 9600,
+            dataBits: 8,
+            parity: 'none',
+            stopBits: 1,
+            autoOpen: false,
+            encoding: 'hex'
+        });
+        smart1 = smart1485.pipe(new CustomParser());
+        smart1485.on('open', () => log('INFO   Success open smart1 port:', CONST.portRECV));
+        smart1485.on('close', () => log('WARNING   Close smart1 port:', CONST.portRECV));
+        smart1485.open((err) => {
+            if (err) {
+                return log('ERROR   Failed to open smart1 port:', err.message);
+            }
+        });
+        smart2485 = new SerialPort({
+            path: CONST.portSEND,
+            baudRate: 9600,
+            dataBits: 8,
+            parity: 'none',
+            stopBits: 1,
+            autoOpen: false,
+            encoding: 'hex'
+        });
+        smart2 = smart2485.pipe(new CustomParser());
+        smart2485.on('open', () => log('INFO   Success open smart1 port:', CONST.portSEND));
+        smart2485.on('close', () => log('WARNING   Close smart1 port:', CONST.portSEND));
+        smart2485.open((err) => {
+            if (err) {
+                return log('ERROR   Failed to open smart1 port:', err.message);
+            }
+        });
+    }
+    else {
+        log('INFO   Smart1 connection type: Socket')
+        log('INFO   initialize socket...')
+        smart1485 = new net.Socket();
+        smart1485.connect(smartVar.recv_port, smartVar.recv_addr, function () {
+            log('INFO   Success connected to smart1', "(" + smartVar.recv_port, smartVar.recv_addr + ")");
+        });
+        smart1485.on('error', (err) => {
+            if (err.code == "ETIMEDOUT") {
+                log("ERROR   Make sure socket is activated")
+            } else { log('ERROR   Smart1 connection failed:', err.message) }
+        });
+        smart1 = smart1485.pipe(new CustomParser());
+
+        smart2485 = new net.Socket();
+        smart2485.connect(smartVar.send_port, smartVar.send_addr, function () {
+            log('INFO   Success connected to smart2', "(" + smartVar.send_addr, smartVar.send_port + ")");
+        });
+        smart2485.on('error', (err) => {
+            if (err.code == "ETIMEDOUT") {
+                log("ERROR   Make sure socket is activated")
+            } else { log('ERROR   Smart2 connection failed:', err.message) }
+        });
+        smart2 = smart2485.pipe(new CustomParser());
+    }
+};
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 // 홈넷에서 SerialPort로 상태 정보 수신
@@ -423,34 +514,24 @@ energy.on('data', function (data) {
                     case 0x81: //제어
                         const ack1 = Buffer.alloc(1);
                         data.copy(ack1, 0, 1, 3);
-                        var objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Room');
-                        var objFoundIdx = queue.findIndex(obj => obj.commandHex.includes(ack1));
+                        var objFoundIdx = ((CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Room')) && (queue.findIndex(obj => obj.commandHex.includes(ack1))));
                         if (objFoundIdx > -1) {
                             log('INFO   Success command #Set State=', retryCount);
                             queue.splice(objFoundIdx, 1);
                             retryCount = 0;
                         }
                         break;
-
                 }
             }
             break;
-        /// code checking....
     }
 });
 
 control.on('data', function (data) {
     lastReceive = new Date().getTime();
-    if (data[0] != 0x02) return;
     // console.log('Control>> Receive interval: ', (new Date().getTime()) - lastReceive, 'ms ->', data.toString('hex'));
- 
-    if (data[1] == 0x28) {
-        packet = {
-            timestamp: data.slice(4, 5).toString('hex')
-        }
-    }
-    console.log('Control>> timeStamp:', packet.timestamp)
 
+    if (data[0] != 0x02) return;
     switch (data[1]) {
         case 0x31:
             switch (data[2]) {
@@ -463,8 +544,8 @@ control.on('data', function (data) {
                 case 0x82: //제어
                     const ack2 = Buffer.alloc(1);
                     data.copy(ack2, 0, 1, 2);
-                    var objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Gas');
-                    var objFoundIdx = queue.findIndex(obj => obj.commandHex.includes(ack2));
+                    var objFoundIdx = ((CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Gas')) && (queue.findIndex(obj => obj.commandHex.includes(ack2))));
+                    objFoundIdx = queue.findIndex(obj => obj.commandHex.includes(ack2));
                     if (objFoundIdx > -1) {
                         log('INFO   Success command #Set State=', retryCount);
                         queue.splice(objFoundIdx, 1);
@@ -485,8 +566,7 @@ control.on('data', function (data) {
                 case 0x82: //제어
                     const ack2 = Buffer.alloc(1);
                     data.copy(ack2, 0, 1, 2);
-                    var objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Doorlock');
-                    var objFoundIdx = queue.findIndex(obj => obj.commandHex.includes(ack2));
+                    var objFoundIdx = ((CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Doorlock')) && (queue.findIndex(obj => obj.commandHex.includes(ack2))));
                     if (objFoundIdx > -1) {
                         log('INFO   Success command #Set State=', retryCount);
                         queue.splice(objFoundIdx, 1);
@@ -517,8 +597,7 @@ control.on('data', function (data) {
                 case 0x81: case 0x83: case 0x87: //제어
                     const ack2 = Buffer.alloc(1);
                     data.copy(ack2, 0, 1, 2);
-                    var objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Fan');
-                    var objFoundIdx = queue.findIndex(obj => obj.commandHex.includes(ack2));
+                    var objFoundIdx = ((CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Fan')) && (queue.findIndex(obj => obj.commandHex.includes(ack2))));
                     if (objFoundIdx > -1) {
                         log('INFO   Success command #Set State=', retryCount);
                         queue.splice(objFoundIdx, 1);
@@ -527,7 +606,6 @@ control.on('data', function (data) {
                     break;
             }
             break;
-        /// matter no
         case 0x28:
             switch (data[3]) {
                 case 0x91:
@@ -544,18 +622,65 @@ control.on('data', function (data) {
                 case 0x92: //제어
                     const ack2 = Buffer.alloc(1);
                     data.copy(ack2, 0, 1, 2);
-                    var objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Thermo');
-                    var objFoundIdx = queue.findIndex(obj => obj.commandHex.includes(ack2));
+                    var objFoundIdx = ((CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Thermo')) && (queue.findIndex(obj => obj.commandHex.includes(ack2))));
                     if (objFoundIdx > -1) {
                         log('INFO   Success command #Set State=', retryCount);
                         queue.splice(objFoundIdx, 1);
                         retryCount = 0;
                     }
                     break;
-                /// matter no
             }
     }
 });
+
+if (smartVar.enable == 'on') {
+    smart1.on('data', function (data) {
+        lastReceive = new Date().getTime();
+        //console.log('Smart1>> Receive interval: ', (new Date().getTime()) - lastReceive, 'ms ->', data.toString('hex'));
+
+        if (data[0] != 0x02) return;
+        var objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Elevator');
+        if (objFound) {
+            switch (objFound.power = data[11]) {
+                case 0x00: objFound.power = 'OFF'; break;  //idle
+                case 0x01: objFound.power = 'ON'; break;   //moving
+                case 0x04: objFound.power = 'OFF'; break;  //arrived
+            }
+            if (data[11] == 0x01) {
+                objFound.floor = data[12].toString()
+                log('Current Floor:', data[12].toString())
+            }
+            updateStatus(objFound);
+        }
+    });
+
+    smart2.on('data', function (data) {
+        lastReceive = new Date().getTime();
+        //console.log('Smart2>> Receive interval: ', (new Date().getTime()) - lastReceive, 'ms ->', data.toString('hex'));
+
+        if (data[0] != 0x02) return;
+        var objFoundIdx = ((CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Elevator')) && (queue.findIndex(obj => obj.commandHex.includes(ack3))));
+        objFoundIdx.commandHex[4] = data[4].toString();  //timestamp
+        data = objFoundIdx.commandHex;
+        sum = 0x03;
+        for (var i = 0; i < 11; i++) {
+            sum = ((data[i] ^ sum) + 1) & 0xff
+        }
+        objFoundIdx.commandHex[11] = sum; // 마지막 Byte는 XOR SUM
+
+        switch (data[5]) {
+            case 0x10: case 0x20:
+                const ack3 = Buffer.alloc(1);
+                data.copy(ack3, 0, 1, 5);
+                if (objFoundIdx > -1) {
+                    log('INFO   Success command #Set State=', retryCount);
+                    queue.splice(objFoundIdx, 1);
+                    retryCount = 0;
+                }
+                break;
+        }
+    });
+};
 
 // MQTT로 HA에 상태값 전송
 var updateStatus = (obj) => {
@@ -598,21 +723,18 @@ client.on('message', (topic, message) => {
         var topics = topic.split('/');
         var value = message.toString(); // message buffer이므로 string으로 변환
         var objFound = null;
-        var packet = {};
         if (topics[0] === CONST.TOPIC_PRFIX) {
             // 온도설정 명령의 경우 모든 온도를 Hex로 정의해두기에는 많으므로 온도에 따른 시리얼 통신 메시지 생성
             if (topics[2] === 'setTemp') {
                 objFound = CONST.DEVICE_COMMAND.find(obj => obj.deviceId + obj.subId === topics[1] && obj.hasOwnProperty('setTemp'));
-                //console.log('Control>> timeStamp:', packet.timestamp)
-                objFound.commandHex[4] = packet.timestamp
                 objFound.commandHex[7] = Number(value);
                 objFound.setTemp = String(Number(value)); // 온도값은 소수점이하는 버림
                 data = objFound.commandHex;
                 sum = 0x03;
-                for (var i = 0; i < 14; i++) {
-                    var xorSum = ((data[i] ^ sum) + 1) & 0xff
+                for (var i = 0; i < 13; i++) {
+                    sum = ((data[i] ^ sum) + 1) & 0xff
                 }
-                objFound.commandHex[13] = xorSum; // 마지막 Byte는 XOR SUM
+                objFound.commandHex[13] = sum; // 마지막 Byte는 XOR SUM
             }
             // 다른 명령은 미리 정의해놓은 값을 매칭
             else {
@@ -660,6 +782,9 @@ const commandProc = () => {
     } else if (objfilter.includes(obj.deviceId)) {
         control485.write(obj.commandHex, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
         log('INFO  ', 'Control>> Send to Device:', obj.deviceId, obj.subId, '->', obj.state, obj.commandHex.toString('hex'));
+    } else if (obj.deviceId === 'Elevator') {
+        smart2.write(obj.commandHex, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
+        log('INFO  ', 'Smart>> Send to Device:', obj.deviceId, obj.subId, '->', obj.state, obj.commandHex.toString('hex'));
     }
     obj.sentTime = lastReceive;	// 명령 전송시간 sentTime으로 저장
     // ack메시지가 오지 않는 경우 방지
