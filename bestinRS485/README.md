@@ -4,6 +4,9 @@
 
 ## About
 HAKorea 님의 addons 저장소를 참고하여 작성하였습니다.
+체크섬 공식을 이용하여 동적패킷을 생성하여 온도설정과 엘리베이터 호출을 지원합니다.
+엘리베이터 활성화 시에는 게이트웨이 스마트 포트를 Y커플러 통해서 분배해야 합니다.
+설치 방법-> https://yogyui.tistory.com/entry/%EA%B4%91%EA%B5%90%EC%95%84%EC%9D%B4%ED%8C%8C%ED%81%AC-%EC%97%98%EB%A6%AC%EB%B2%A0%EC%9D%B4%ED%84%B0-%ED%99%88%ED%82%B7-%EC%97%B0%EB%8F%99-1-2
 
 ## Version : 2022.12.05
 
@@ -33,17 +36,29 @@ energy_type:
 'serial' or 'socket'
 control_type:
 'serial' or 'socket'
+smart_type:
+'serial' or 'socket'
+smart_enable:
+'on' or 'off'
 
 serial:
   energy_rpiPort: /dev/ttyUSB0
   energy_windowPort: COM0
   ctrl_rpiPort: /dev/ttyUSB0
   ctrl_windowPort: COM0
+  recv_rpiPort: /dev/ttyUSB0
+  recv_windowPort: COM0
+  send_rpiPort: /dev/ttyUSB0
+  send_windowPort: COM0
 socket:
   energy_addr: 192.168.0.x
   energy_port: 8899
   ctrl_addr: 192.168.0.x
   ctrl_port: 8899  
+  recv_addr: 192.168.0.x
+  recv_port: 8899
+  send_addr: 192.168.0.x
+  send_port: 8899  
   
 mqtt:
   server: 192.168.x.x
@@ -54,7 +69,7 @@ mqtt:
   prefix: homenet
 ```
 <# 에너지 포트, 컨트롤포트 각각 독립적으로 연결을 지원합니다. 예를 들어 에너지 포트는 시리얼, 컨트롤 포트는 소켓으로 구성할 수 있습니다.>
-### Option: `sendDelay, gapDelay` (필수)
+### Option: `sendDelay, gapDelay, retryCount` (필수)
 sendDelay-> 실제 패킷을 전송하는 딜레이를 의미합니다. (ms)
 gapDelay-> 실제 패킷을 전송한후 명령응답으로 넘어가는 사이 딜레이를 의미합니다. (ms)
 (딜레이가 길어질수록 명령을 보낸후 명령응답을 확인하는 시간이 늘어납니다. 반대로 너무줄이면 명령이 성공하지도 않았는데 명령응답으로 처리될 수 있습니다.)
@@ -66,16 +81,16 @@ retryCount-> 설정한 횟수만큼 명령을 시도합니다.(ack(응답) 메�
 ### Option: `serial` (옵션)
 type: serial 로 설정한 경우 아래 옵션 사용
 ```yaml
-  energy/control_rpiPort: /dev/ttyUSB0  // 라즈베리파이 포트명
-  energy/control_windowPort: COM0    // 윈도우 포트명
+  energy/control/smart_rpiPort: /dev/ttyUSB0  // 라즈베리파이 포트명
+  energy/control/samrt_windowPort: COM0    // 윈도우 포트명
 ```
 socket을 사용하는 경우 위 값은 무시합니다.
 
 ### Option: `socket` (옵션) 
 type: socket 로 설정한 경우 아래 옵션 사용
 ```yaml
-  energy/control_addr: 192.0.x.x   // elfin과 같은 wifi to RS485 기기의 ip 주소
-  energy/control_port: 8899     // elfin과 같은 wifi to RS485 기기의 port 주소
+  energy/control/smart_addr: 192.0.x.x   // elfin과 같은 wifi to RS485 기기의 ip 주소
+  energy/control/smart_port: 8899     // elfin과 같은 wifi to RS485 기기의 port 주소
 ```
 
 ### Option `MQTT` (필수)
