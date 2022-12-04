@@ -421,8 +421,8 @@ energy.on('data', function (data) {
                         updateStatus(objFound);
                         break;
                     case 0x81: //제어
-                        const ack1 = Buffer.alloc(4);
-                        data.copy(ack1, 0, 1, 2, 3);
+                        const ack1 = Buffer.alloc(1);
+                        data.copy(ack1, 0, 1, 3);
                         var objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Room');
                         var objFoundIdx = queue.findIndex(obj => obj.commandHex.includes(ack1));
                         if (objFoundIdx > -1) {
