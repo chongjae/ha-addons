@@ -20,6 +20,7 @@
   "options": {
     "sendDelay": 80,
     "gapDelay": 30,
+    "retryCount": 20,
     "energy_type": "socket",
     "ctrl_type": "socket",
     "serial": {
@@ -46,6 +47,7 @@
   "schema": {
     "sendDelay": "int",
     "gapDelay": "int",
+    "retryCount": "int",
     "energy_type": "list(serial|socket)",
     "ctrl_type": "list(serial|socket)",
     "serial": {
