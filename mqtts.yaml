@@ -1,117 +1,166 @@
 switch:
 - name: "light_1_1"
-  command_topic: "homenet/Light1/power1/command"
-  state_topic: "homenet/Light1/power1/state"
+  command_topic: "homenet/Room1/light1/command"
+  state_topic: "homenet/Room1/light1/state"
   icon: mdi:lightbulb
 - name: "light_1_2"
-  command_topic: "homenet/Light1/power2/command"
-  state_topic: "homenet/Light1/power2/state"
+  command_topic: "homenet/Room1/light2/command"
+  state_topic: "homenet/Room1/light2/state"
   icon: mdi:lightbulb
 - name: "light_1_3"
-  command_topic: "homenet/Light1/power3/command"
-  state_topic: "homenet/Light1/power3/state"
+  command_topic: "homenet/Room1/light3/command"
+  state_topic: "homenet/Room1/light3/state"
+  icon: mdi:lightbulb
+- name: "light_1_4"
+  command_topic: "homenet/Room1/light4/command"
+  state_topic: "homenet/Room1/light4/state"
   icon: mdi:lightbulb
 - name: "light_2_1"
-  command_topic: "homenet/Light2/power1/command"
-  state_topic: "homenet/Light2/power1/state"
+  command_topic: "homenet/Room2/light1/command"
+  state_topic: "homenet/Room2/light1/state"
   icon: mdi:lightbulb
 - name: "light_2_2"
-  command_topic: "homenet/Light2/power2/command"
-  state_topic: "homenet/Light2/power2/state"
+  command_topic: "homenet/Room2/light2/command"
+  state_topic: "homenet/Room2/light2/state"
   icon: mdi:lightbulb
 - name: "light_3_1"
-  command_topic: "homenet/Light3/power1/command"
-  state_topic: "homenet/Light3/power1/state"
+  command_topic: "homenet/Room3/light1/command"
+  state_topic: "homenet/Room3/light1/state"
   icon: mdi:lightbulb
 - name: "light_3_2"
-  command_topic: "homenet/Light3/power2/command"
-  state_topic: "homenet/Light3/power2/state"
+  command_topic: "homenet/Room3/light2/command"
+  state_topic: "homenet/Room3/light2/state"
   icon: mdi:lightbulb
 - name: "light_4_1"
-  command_topic: "homenet/Light4/power1/command"
-  state_topic: "homenet/Light4/power1/state"
+  command_topic: "homenet/Room4/light1/command"
+  state_topic: "homenet/Room4/light1/state"
   icon: mdi:lightbulb
 - name: "light_4_2"
-  command_topic: "homenet/Light4/power2/command"
-  state_topic: "homenet/Light4/power2/state"
+  command_topic: "homenet/Room4/light2/command"
+  state_topic: "homenet/Room4/light2/state"
   icon: mdi:lightbulb
 - name: "light_5_1"
-  command_topic: "homenet/Light5/power1/command"
-  state_topic: "homenet/Light5/power1/state"
+  command_topic: "homenet/Room5/light1/command"
+  state_topic: "homenet/Room5/light1/state"
   icon: mdi:lightbulb
 - name: "light_5_2"
-  command_topic: "homenet/Light5/power2/command"
-  state_topic: "homenet/Light5/power2/state"
+  command_topic: "homenet/Room5/light2/command"
+  state_topic: "homenet/Room5/light2/state"
   icon: mdi:lightbulb
-
 - name: "outlet_1_1"
-  command_topic: "homenet/Outlet1/power1/command"
-  state_topic: "homenet/Outlet1/power1/state"
+  command_topic: "homenet/Room1/outlet1/command"
+  state_topic: "homenet/Room1/outlet1/state"
   icon: mdi:power-socket-de
 - name: "outlet_1_2"
-  command_topic: "homenet/Outlet1/power2/command"
-  state_topic: "homenet/Outlet1/power2/state"
+  command_topic: "homenet/Room1/outlet2/command"
+  state_topic: "homenet/Room1/outlet2/state"
   icon: mdi:power-socket-de
 - name: "outlet_2_1"
-  command_topic: "homenet/Outlet2/power1/command"
-  state_topic: "homenet/Outlet2/power1/state"
+  command_topic: "homenet/Room2/outlet1/command"
+  state_topic: "homenet/Room2/outlet1/state"
   icon: mdi:power-socket-de
 - name: "outlet_2_2"
-  command_topic: "homenet/Outlet2/power2/command"
-  state_topic: "homenet/Outlet2/power2/state"
+  command_topic: "homenet/Room2/outlet2/command"
+  state_topic: "homenet/Room2/outlet2/state"
   icon: mdi:power-socket-de
 - name: "outlet_3_1"
-  command_topic: "homenet/Outlet3/power1/command"
-  state_topic: "homenet/Outlet3/power1/state"
+  command_topic: "homenet/Room3/outlet1/command"
+  state_topic: "homenet/Room3/outlet1/state"
   icon: mdi:power-socket-de
 - name: "outlet_3_2"
-  command_topic: "homenet/Outlet3/power2/command"
-  state_topic: "homenet/Outlet3/power2/state"
+  command_topic: "homenet/Room3/outlet2/command"
+  state_topic: "homenet/Room3/outlet2/state"
   icon: mdi:power-socket-de
 - name: "outlet_4_1"
-  command_topic: "homenet/Outlet4/power1/command"
-  state_topic: "homenet/Outlet4/power1/state"
+  command_topic: "homenet/Room4/outlet1/command"
+  state_topic: "homenet/Room4/outlet1/state"
   icon: mdi:power-socket-de
 - name: "outlet_4_2"
-  command_topic: "homenet/Outlet4/power2/command"
-  state_topic: "homenet/Outlet4/power2/state"
+  command_topic: "homenet/Room4/outlet2/command"
+  state_topic: "homenet/Room4/outlet2/state"
   icon: mdi:power-socket-de
 - name: "outlet_5_1"
-  command_topic: "homenet/Outlet5/power1/command"
-  state_topic: "homenet/Outlet5/power1/state"
+  command_topic: "homenet/Room5/outlet1/command"
+  state_topic: "homenet/Room5/outlet1/state"
   icon: mdi:power-socket-de
 - name: "outlet_5_2"
-  command_topic: "homenet/Outlet5/power2/command"
-  state_topic: "homenet/Outlet5/power2/state"
+  command_topic: "homenet/Room5/outlet2/command"
+  state_topic: "homenet/Room5/outlet2/state"
   icon: mdi:power-socket-de
-
 - name: "standby_power_1"
-  command_topic: "homenet/StandbyPw1/power/command"
-  state_topic: "homenet/StandbyPw1/power/state"
+  command_topic: "homenet/Room1/idlePower/command"
+  state_topic: "homenet/Room1/idlePower/state"
   icon: mdi:power-socket-de
 - name: "standby_power_2"
-  command_topic: "homenet/StandbyPw2/power/command"
-  state_topic: "homenet/StandbyPw2/power/state"
+  command_topic: "homenet/Room2/idlePower/command"
+  state_topic: "homenet/Room2/idlePower/state"
   icon: mdi:power-socket-de
 - name: "standby_power_3"
-  command_topic: "homenet/StandbyPw3/power/command"
-  state_topic: "homenet/StandbyPw3/power/state"
+  command_topic: "homenet/Room3/idlePower/command"
+  state_topic: "homenet/Room3/idlePower/state"
   icon: mdi:power-socket-de
 - name: "standby_power_4"
-  command_topic: "homenet/StandbyPw4/power/command"
-  state_topic: "homenet/StandbyPw4/power/state"
+  command_topic: "homenet/Room4/idlePower/command"
+  state_topic: "homenet/Room4/idlePower/state"
   icon: mdi:power-socket-de
 - name: "standby_power_5"
-  command_topic: "homenet/StandbyPw5/power/command"
-  state_topic: "homenet/StandbyPw5/power/state"
+  command_topic: "homenet/Room5/idlePower/command"
+  state_topic: "homenet/Room5/idlePower/state"
   icon: mdi:power-socket-de
-
 - name: "gas"
   command_topic: "homenet/Gas/power/command"
   state_topic: "homenet/Gas/power/state"
-  payload_on: "OFF"
-  payload_off: "OFF"
   icon: mdi:gas-cylinder
+- name: "doorlock"
+  command_topic: "homenet/Doorlock/power/command"
+  state_topic: "homenet/Doorlock/power/state"
+  icon: mdi:door
+  
+sensor:
+- name: "power_1_1"
+  state_topic: "homenet/Room1/curPower1/state"
+  unit_of_measurement: "Wh"
+  icon: mdi:lightning-bolt
+- name: "power_1_2"
+  state_topic: "homenet/Room1/curPower2/state"
+  unit_of_measurement: "Wh"
+  icon: mdi:lightning-bolt
+- name: "power_1_3"
+  state_topic: "homenet/Room1/curPower3/state"
+  unit_of_measurement: "Wh"
+  icon: mdi:lightning-bolt
+- name: "power_2_1"
+  state_topic: "homenet/Room2/curPower1/state"
+  unit_of_measurement: "Wh"
+  icon: mdi:lightning-bolt
+- name: "power_2_2"
+  state_topic: "homenet/Room2/curPower2/state"
+  unit_of_measurement: "Wh"
+  icon: mdi:lightning-bolt
+- name: "power_3_1"
+  state_topic: "homenet/Room3/curPower1/state"
+  unit_of_measurement: "Wh"
+  icon: mdi:lightning-bolt
+- name: "power_3_2"
+  state_topic: "homenet/Room3/curPower2/state"
+  unit_of_measurement: "Wh"
+  icon: mdi:lightning-bolt
+- name: "power_4_1"
+  state_topic: "homenet/Room4/curPower1/state"
+  unit_of_measurement: "Wh"
+  icon: mdi:lightning-bolt
+- name: "power_4_2"
+  state_topic: "homenet/Room4/curPower2/state"
+  unit_of_measurement: "Wh"
+  icon: mdi:lightning-bolt
+- name: "power_5_1"
+  state_topic: "homenet/Room5/curPower1/state"
+  unit_of_measurement: "Wh"
+  icon: mdi:lightning-bolt
+- name: "power_5_2"
+  state_topic: "homenet/Room5/curPower2/state"
+  unit_of_measurement: "Wh"
+  icon: mdi:lightning-bolt
 
 climate:
 - name: "thermostat_1"
@@ -174,7 +223,7 @@ climate:
   min_temp: 5
   max_temp: 40
   precision: 0.1
-
+  
 fan:
 - name: "fan"
   state_topic: "homenet/Fan/power/state"
@@ -183,7 +232,7 @@ fan:
   preset_mode_command_template: >
     {% if value == 'low' %}
       low
-    {% elif value == 'medium' %}
+    {% elif value == 'mid' %}
       medium
     {% elif value == 'high' %}
       high
@@ -198,7 +247,7 @@ fan:
   preset_mode_value_template: >
     {% if value_json.FanSpeed == low %}
       low
-    {% elif value_json.FanSpeed == medium %}
+    {% elif value_json.FanSpeed == mid %}
       medium
     {% elif value_json.FanSpeed == high %}
       high
@@ -211,7 +260,7 @@ fan:
     {% endif %}
   preset_modes:
     - 'low'
-    - 'medium'
+    - 'mid'
     - 'high'
     - 'nature ON'
     - 'nature OFF'
