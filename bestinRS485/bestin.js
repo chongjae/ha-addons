@@ -316,7 +316,6 @@ var homeStatus = {};
 var lastReceive = new Date().getTime();
 var mqttReady = false;
 var queue = new Array();
-//var packet = {};
 var retryCount = 0;
 
 // MQTT-Broker 연결 
@@ -510,7 +509,7 @@ energy.on('data', function (data) {
                             objFound.idlePower = (pw == 9) ? 'ON' : 'OFF'
                         }
                         updateStatus(objFound);
-                        break;
+                        commandProc();
                     case 0x81: //제어
                         const ack1 = Buffer.alloc(1);
                         data.copy(ack1, 0, 1, 3);
@@ -541,6 +540,7 @@ control.on('data', function (data) {
                         objFound.power = (data[5] == 0x01) ? 'ON' : 'OFF'
                         updateStatus(objFound);
                     }
+                    commandProc();
                 case 0x82: //제어
                     const ack2 = Buffer.alloc(1);
                     data.copy(ack2, 0, 1, 2);
@@ -563,6 +563,7 @@ control.on('data', function (data) {
                         objFound.power = (data[5] == 0x52) ? 'ON' : 'OFF'
                         updateStatus(objFound);
                     }
+                    commandProc();
                 case 0x82: //제어
                     const ack2 = Buffer.alloc(1);
                     data.copy(ack2, 0, 1, 2);
@@ -593,7 +594,7 @@ control.on('data', function (data) {
                         }
                         updateStatus(objFound);
                     }
-                    break;
+                    commandProc();
                 case 0x81: case 0x83: case 0x87: //제어
                     const ack2 = Buffer.alloc(1);
                     data.copy(ack2, 0, 1, 2);
@@ -618,7 +619,7 @@ control.on('data', function (data) {
                     objFound.setTemp = ((data[7] & 0x3f) + ((data[7] & 0x40) / 128)).toString(10);
                     objFound.curTemp = ((data[8] * 256 + data[9]) / 10.0).toString(10);
                     updateStatus(objFound);
-                    break;
+                    commandProc();
                 case 0x92: //제어
                     const ack2 = Buffer.alloc(1);
                     data.copy(ack2, 0, 1, 2);
