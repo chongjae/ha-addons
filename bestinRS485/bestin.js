@@ -460,7 +460,7 @@ if (smartVar.enable == 'on') {
         log('INFO   initialize socket...')
         smart1485 = new net.Socket();
         smart1485.connect(smartVar.recv_port, smartVar.recv_addr, function () {
-            log('INFO   Success connected to smart1', "(" + smartVar.recv_port, smartVar.recv_addr + ")");
+            log('INFO   Success connected to smart1', "(" + smartVar.recv_addr, smartVar.recv_port, + ")");
         });
         smart1485.on('error', (err) => {
             if (err.code == "ETIMEDOUT") {
