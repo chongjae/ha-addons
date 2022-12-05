@@ -641,7 +641,7 @@ if (smartVar.enable == 'on') {
         lastReceive = new Date().getTime();
         // console.log('Smart1>> Receive interval: ', (new Date().getTime()) - lastReceive, 'ms ->', data.toString('hex'));
         packet = {
-            timestamp: data.slice(4, 5)
+            timestamp: data.slice(4, 5).toString('hex')
         }
 
         if (data[0] != 0x02) return;
