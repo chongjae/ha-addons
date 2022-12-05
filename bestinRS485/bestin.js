@@ -216,7 +216,7 @@ const CONST = {
 
         { deviceId: 'Gas', subId: '', commandHex: Buffer.alloc(10, '0231020000000000003D', 'hex'), power: 'OFF' },
         { deviceId: 'Doorlock', subId: '', commandHex: Buffer.alloc(10, '0241020001000000004E', 'hex'), power: 'ON' },
-        { deviceId: 'Elevator', subId: '', commandHex: Buffer.alloc(12, '02C10C91FF100100020102FF', 'hex'), power: 'ON' },
+        { deviceId: 'Elevator', subId: '', commandHex: Buffer.alloc(12), power: 'ON' },
     ],
 
     // 상태 Topic (/homenet/${deviceId}${subId}/${property}/state/ = ${value})
@@ -317,6 +317,7 @@ var lastReceive = new Date().getTime();
 var mqttReady = false;
 var queue = new Array();
 var retryCount = 0;
+var packet= {}
 
 // MQTT-Broker 연결 
 const client = mqtt.connect('mqtt://' + mqttVar.broker, {
@@ -504,6 +505,7 @@ energy.on('data', function (data) {
                             objFound.light1 = (data[6] & 0x01) ? 'ON' : 'OFF'
                             objFound.light2 = (data[6] & 0x02) ? 'ON' : 'OFF'
                             objFound.light3 = (data[6] & 0x04) ? 'ON' : 'OFF'
+                            objFound.light4 = (data[6] & 0x08) ? 'ON' : 'OFF'
                             objFound.outlet1 = (data[7] & 0x01) ? 'ON' : 'OFF'
                             objFound.outlet2 = (data[7] & 0x02) ? 'ON' : 'OFF'
                             objFound.idlePower = (pw == 9) ? 'ON' : 'OFF'
@@ -590,7 +592,7 @@ control.on('data', function (data) {
                         switch (objFound.preset = data[6]) {
                             case 0x01: objFound.preset = 'low'; break;
                             case 0x02: objFound.preset = 'mid'; break;
-                            case 0x03: objFound.pres1et = 'high'; break;
+                            case 0x03: objFound.preset = 'high'; break;
                         }
                         updateStatus(objFound);
                     }
@@ -637,15 +639,18 @@ control.on('data', function (data) {
 if (smartVar.enable == 'on') {
     smart1.on('data', function (data) {
         lastReceive = new Date().getTime();
-        //console.log('Smart1>> Receive interval: ', (new Date().getTime()) - lastReceive, 'ms ->', data.toString('hex'));
+        // console.log('Smart1>> Receive interval: ', (new Date().getTime()) - lastReceive, 'ms ->', data.toString('hex'));
+        packet = {
+            timestamp: data.slice(4, 5)
+        }
 
         if (data[0] != 0x02) return;
         var objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Elevator');
         if (objFound) {
             switch (objFound.power = data[11]) {
-                case 0x00: objFound.power = 'OFF'; break;  //idle
-                case 0x01: objFound.power = 'ON'; break;   //moving
-                case 0x04: objFound.power = 'OFF'; break;  //arrived
+                case 0x00: objFound.power = 'OFF'; break; //idle
+                case 0x01: objFound.power = 'ON'; break; //moving
+                case 0x04: objFound.power = 'OFF'; break; //arrived
             }
             if (data[11] == 0x01) {
                 objFound.floor = data[12].toString()
@@ -657,27 +662,33 @@ if (smartVar.enable == 'on') {
 
     smart2.on('data', function (data) {
         lastReceive = new Date().getTime();
-        //console.log('Smart2>> Receive interval: ', (new Date().getTime()) - lastReceive, 'ms ->', data.toString('hex'));
+        // console.log('Smart2>> Receive interval: ', (new Date().getTime()) - lastReceive, 'ms ->', data.toString('hex'));
 
         if (data[0] != 0x02) return;
         var objFound = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Elevator');
-        objFound.commandHex[4] = (data[4] & 0xff).toString();  //timestamp
-        data = objFound.commandHex;
+        prefix = Buffer.from('02C10C91', 'hex')
+        timestamp = Buffer.from(packet.timestamp, 'hex')
+        console.log(timestamp);
+        next_ts = Buffer.from('100100020102', 'hex')
+        data = Buffer.concat([prefix, timestamp, next_ts])
         sum = 0x03;
         for (var i = 0; i < 11; i++) {
             sum = ((data[i] ^ sum) + 1) & 0xff
         }
-        objFound.commandHex[11] = sum; // 마지막 Byte는 XOR SUM
+        buf_sum = Buffer.from(sum.toString(16), 'hex')
+        buf_commandHex = Buffer.concat([data, buf_sum])
+        objFound.commandHex = buf_commandHex.toString('hex')
+        commandProc();
 
         switch (data[5]) {
             case 0x10: case 0x20:
-                const ack3 = Buffer.alloc(6);
+                const ack3 = Buffer.alloc(1);
                 data.copy(ack3, 0, 1, 5);
                 var objFoundIdx = ((CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Elevator')) && (queue.findIndex(obj => obj.commandHex.includes(ack3))));
                 if (objFoundIdx > -1) {
-                    log('INFO   Success command #Set State=', retryCount);
+                    log('INFO Success command #Set State=', retryCount);
                     queue.splice(objFoundIdx, 1);
-                    retryCount = 0;
+                    retryCount = 1;
                 }
                 break;
         }
