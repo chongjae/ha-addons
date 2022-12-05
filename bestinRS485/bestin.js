@@ -668,7 +668,7 @@ if (smartVar.enable == 'on') {
         var objFound = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Elevator');
         prefix = Buffer.from('02C10C91', 'hex')
         timestamp = Buffer.from(packet.timestamp, 'hex')
-        console.log(timestamp);
+        //console.log(timestamp);
         next_ts = Buffer.from('100100020102', 'hex')
         data = Buffer.concat([prefix, timestamp, next_ts])
         sum = 0x03;
