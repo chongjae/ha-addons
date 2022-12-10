@@ -818,4 +818,4 @@ const commandProc = () => {
 }
 
 setTimeout(() => { mqttReady = true; log('INFO   MQTT ready...') }, CONST.mqttDelay);
-setInterval(commandProc, 20);
+setInterval(commandProc, 20); 
