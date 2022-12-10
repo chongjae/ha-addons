@@ -29,7 +29,7 @@
       "energy_windowPort": "COM0",
       "ctrl_rpiPort": "/dev/ttyUSB0",
       "ctrl_windowPort": "COM0",
-      "recv_rpiPort": "/dev/ttyUSB0",
+      "recv_rpiPort": "/dev/ttyUSB0", 
       "recv_windowPort": "COM0",
       "send_rpiPort": "/dev/ttyUSB0",
       "send_windowPort": "COM0"
