@@ -119,7 +119,7 @@ switch:
   command_topic: "homenet/Elevator/power/command"
   state_topic: "homenet/Elevator/power/state"
   icon: mdi:elevator
-  
+
 sensor:
 - name: "power_1_1"
   state_topic: "homenet/Room1/curPower1/state"
@@ -165,10 +165,12 @@ sensor:
   state_topic: "homenet/Room5/curPower2/state"
   unit_of_measurement: "Wh"
   icon: mdi:lightning-bolt
-- name: "elevator"
+- name: "evdirection"
+  state_topic: "homenet/Elevator/direction/state"
+  icon: mdi:elevator
+- name: "evstate"
   state_topic: "homenet/Elevator/floor/state"
   icon: mdi:elevator
-
 
 climate:
 - name: "thermostat_1"
