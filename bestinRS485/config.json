@@ -1,6 +1,6 @@
 {
   "name": "BESTIN WallPad with RS485",
-  "version": "2022.12.05",
+  "version": "1.0.0",
   "slug": "wallpad",
   "description": "BESTIN WallPad for Home Assistant",
   "arch": [
@@ -18,9 +18,8 @@
   "boot": "auto",
   "uart": true,
   "options": {
-    "sendDelay": 80,
-    "gapDelay": 30,
-    "retryCount": 20,
+    "sendDelay": 100,
+    "retryCount": 50,
     "energy_type": "socket",
     "ctrl_type": "socket",
     "smart_type": "serial",
@@ -56,7 +55,6 @@
   },
   "schema": {
     "sendDelay": "int",
-    "gapDelay": "int",
     "retryCount": "int",
     "energy_type": "list(serial|socket)",
     "ctrl_type": "list(serial|socket)",
