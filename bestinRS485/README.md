@@ -9,7 +9,7 @@ HAKorea 님의 addons 저장소를 참고하여 작성하였습니다.
 설치 방법-> 
 https://yogyui.tistory.com/entry/%EA%B4%91%EA%B5%90%EC%95%84%EC%9D%B4%ED%8C%8C%ED%81%AC-%EC%97%98%EB%A6%AC%EB%B2%A0%EC%9D%B4%ED%84%B0-%ED%99%88%ED%82%B7-%EC%97%B0%EB%8F%99-1-2
 
-## Version : 2022.12.05
+## Version : 1.0.0
 
 ## Installation
 
