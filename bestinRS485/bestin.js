@@ -490,7 +490,7 @@ energy.on('data', function (data) {
     if (data[2] == 0x1e) {
         switch (data[3]) {
             case 0x91: //상태
-                var objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Room');
+                let objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Room');
                 if (objFound) {
                     //조명, 콘센트 상태 정보
                     objFound.subId = data[5].toString(16).substring(1);
@@ -508,15 +508,13 @@ energy.on('data', function (data) {
                 }
                 updateStatus(objFound);
 
-            case 0x81: //제어
-                const ack = Buffer.alloc(1);
-                data.copy(ack, 0, 1, 3);
-                var objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Room');
-                objFoundIdx = queue.findIndex(obj => obj.commandHex.includes(ack));
+            case 0x81: 
+                let objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Room');
+                objFoundIdx = queue.findIndex(e => ((data[3] == 0x81) && (data[0] == e.commandHex[0]) && (data[1] == e.commandHex[1])));
                 if (objFoundIdx > -1) {
-                    log('INFO   Success command #Set State=', retryCnt);
+                    log('INFO   Success command from Ack # Set State=', retryCnt);
                     queue.splice(objFoundIdx, 1);
-                    //retryCnt = 0;
+                    retryCnt = 0;
                 }
         }
     }
@@ -532,21 +530,19 @@ control.on('data', function (data) {
         case 0x31:
             switch (data[2]) {
                 case 0x80: //상태
-                    var objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Gas');
+                    let objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Gas');
                     if (objFound) {
                         objFound.power = (data[5] == 0x01) ? 'ON' : 'OFF'
                         updateStatus(objFound);
                     }
 
                 case 0x82: //제어
-                    const ack = Buffer.alloc(1);
-                    data.copy(ack, 0, 1, 2);
-                    var objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Gas');
-                    objFoundIdx = queue.findIndex(obj => obj.commandHex.includes(ack));
+                    let objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Gas');
+                    objFoundIdx = queue.findIndex(e => ((data[2] == 0x82) && (data[0] == e.commandHex[0]) && (data[1] == e.commandHex[1])));
                     if (objFoundIdx > -1) {
-                        log('INFO   Success command #Set State=', retryCnt);
+                        log('INFO   Success command from Ack # Set State=', retryCnt);
                         queue.splice(objFoundIdx, 1);
-                        //retryCnt = 0;
+                        retryCnt = 0;
                     }
             }
             break;
@@ -554,21 +550,19 @@ control.on('data', function (data) {
         case 0x41:
             switch (data[2]) {
                 case 0x80: //상태
-                    var objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Doorlock');
+                    let objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Doorlock');
                     if (objFound) {
                         objFound.power = (data[5] == 0x52) ? 'ON' : 'OFF'
                         updateStatus(objFound);
                     }
 
                 case 0x82: //제어
-                    const ack = Buffer.alloc(1);
-                    data.copy(ack, 0, 1, 2);
-                    var objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Doorlock');
-                    objFoundIdx = queue.findIndex(obj => obj.commandHex.includes(ack));
+                    let objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Doorlock');
+                    objFoundIdx = queue.findIndex(e => ((data[2] == 0x82) && (data[0] == e.commandHex[0]) && (data[1] == e.commandHex[1])));
                     if (objFoundIdx > -1) {
-                        log('INFO   Success command #Set State=', retryCnt);
+                        log('INFO   Success command from Ack # Set State=', retryCnt);
                         queue.splice(objFoundIdx, 1);
-                        //retryCnt = 0;
+                        retryCnt = 0;
                     }
             }
             break;
@@ -576,7 +570,7 @@ control.on('data', function (data) {
         case 0x61: //상태
             switch (data[2]) {
                 case 0x80:
-                    var objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Fan');
+                    let objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Fan');
                     if (objFound) {
                         if (data[5] == 0x00 | data[5] == 0x01) {
                             objFound.power = (data[5] == 0x01) ? 'ON' : 'OFF'
@@ -592,14 +586,12 @@ control.on('data', function (data) {
                     }
 
                 case 0x81: case 0x83: case 0x87: //제어
-                    const ack = Buffer.alloc(1);
-                    data.copy(ack, 0, 1, 2);
-                    var objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Fan');
-                    objFoundIdx = queue.findIndex(obj => obj.commandHex.includes(ack));
+                    let objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Fan');
+                    objFoundIdx = queue.findIndex(e => ((data[2] == 0x81 & data[2] == 0x83 & data[2] == 0x87) && (data[0] == e.commandHex[0]) && (data[1] == e.commandHex[1])));
                     if (objFoundIdx > -1) {
-                        log('INFO   Success command #Set State=', retryCnt);
+                        log('INFO   Success command from Ack # Set State=', retryCnt);
                         queue.splice(objFoundIdx, 1);
-                        //retryCnt = 0;
+                        retryCnt = 0;
                     }
             }
             break;
@@ -607,7 +599,7 @@ control.on('data', function (data) {
         case 0x28:
             switch (data[3]) {
                 case 0x91:
-                    var objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Thermo')
+                    let objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Thermo')
                     //난방 상태 정보
                     objFound.subId = Number(data[5]);
                     //0x01: 켜짐, 0x02: 꺼짐, 0x07: 대기, 0x11: 켜짐
@@ -618,20 +610,17 @@ control.on('data', function (data) {
                     updateStatus(objFound);
 
                 case 0x92: //제어
-                    const ack = Buffer.alloc(1);
-                    data.copy(ack, 0, 1, 2);
-                    var objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Thermo');
-                    objFoundIdx = queue.findIndex(obj => obj.commandHex.includes(ack));
+                    let objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Thermo');
+                    objFoundIdx = queue.findIndex(e => ((data[3] == 0x92) && (data[0] == e.commandHex[0]) && (data[1] == e.commandHex[1])));
                     if (objFoundIdx > -1) {
-                        log('INFO   Success command #Set State=', retryCnt);
+                        log('INFO   Success command from Ack # Set State=', retryCnt);
                         queue.splice(objFoundIdx, 1);
-                        //retryCnt = 0;
+                        retryCnt = 0;
                     }
             }
             break;
     }
 });
-
 
 if (smartVar.enable == 'on') {
     smart1.on('data', function (data) {
@@ -644,7 +633,7 @@ if (smartVar.enable == 'on') {
         }
 
         if (data[0] != 0x02) return;
-        var objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Elevator');
+        let objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Elevator');
         if (objFound) {
             if (data[3] == 0x13) {
                 objFound.power = (packet.state == '01') ? 'ON' : 'OFF'
@@ -657,14 +646,25 @@ if (smartVar.enable == 'on') {
                 if (data[12] == 0xFF) {
                     objFound.floor = '대기 층'
                 } else if (data[12] & 0x80) {
-                    objFound.floor = 'B'+(data[12] & 0x7f).toString(10)+' 층'
+                    objFound.floor = 'B' + (data[12] & 0x7f).toString(10) + ' 층'
                     log('smart>> Elevator Current Floor:', 'B' + (data[12] & 0x7f), '층')
                 } else {
-                    objFound.floor = (data[12] & 0xff).toString(10)+' 층'
+                    objFound.floor = (data[12] & 0xff).toString(10) + ' 층'
                     log('smart>> Elevator Current Floor:', (data[12] & 0xff), '층')
                 }
             }
             updateStatus(objFound);
+        }
+
+        if ((data[11] == 0x01) && (data[12] == 0xff)) {
+            let objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Elevator');
+            objFoundIdx = queue.findIndex(e => ((data[11] == 0x01) && (data[0] == e.commandHex[0]) && (data[1] == e.commandHex[1])));
+            if (objFoundIdx > -1) {
+                log('INFO   Success command from Ack # Set State=', retryCnt);
+                queue.splice(objFoundIdx, 1);
+                retryCnt = 0;
+            }
+            return;
         }
     });
 
@@ -672,8 +672,8 @@ if (smartVar.enable == 'on') {
         lastReceive = new Date().getTime();
         //console.log('Smart2>> Receive interval: ', (new Date().getTime()) - EVlastReceive, 'ms ->', data.toString('hex'));
 
-    if (data[0] != 0x02) return;
-        var objFound = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Elevator');
+        if (data[0] != 0x02) return;
+        let objFound = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Elevator');
         prefix = Buffer.from('02C10C91', 'hex')
         timestamp = Buffer.from(packet.timestamp, 'hex')
         next_ts = Buffer.from('100100020102', 'hex')
@@ -685,21 +685,7 @@ if (smartVar.enable == 'on') {
         buf_sum = Buffer.from(sum.toString(16), 'hex')
         buf_commandHex = Buffer.concat([data, buf_sum])
         objFound.commandHex = buf_commandHex.toString('hex')
-
-        switch (data[5]) {
-            case 0x10: case 0x20:
-                const ack = Buffer.alloc(2);
-                data.copy(ack, 2, 3);
-                var objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Elevator');
-                objFoundIdx = queue.findIndex(obj => obj.commandHex.includes(ack));
-                if (objFoundIdx > -1) {
-                    log('INFO Success command #Set State=', retryCnt);
-                    queue.splice(objFoundIdx, 1);
-                    //retryCnt = 0;
-                }
-                return;
-        }
-    })
+    });
 };
 
 // MQTT로 HA에 상태값 전송
@@ -777,7 +763,8 @@ client.on('message', (topic, message) => {
             // 최초 실행시 딜레이 없도록 sentTime을 현재시간 보다 sendDelay만큼 이전으로 설정
             objFound.sentTime = (new Date().getTime()) - CONST.sendDelay;
             queue.push(objFound);   // 실행 큐에 저장
-            //updateStatus(objFound); // 처리시간의 Delay때문에 미리 상태 반영
+            updateStatus(objFound); // 처리시간의 Delay때문에 미리 상태 반영
+            retryCnt = 0;
         }
     }
 });
@@ -808,14 +795,16 @@ const commandProc = () => {
     obj.sentTime = lastReceive;	// 명령 전송시간 sentTime으로 저장
 
     // ack메시지가 오지 않는 경우 방지
-    if (retryCnt++ < CONST.retryCnt) {
+    retryCnt++;
+    if (retryCnt < CONST.retryCnt) {
         // 다시 큐에 저장하여 Ack 메시지 받을때까지 반복 실행
         queue.push(obj);
     } else {
         // 보통 패킷을 수정하다가 맨 뒤에 있는 체크섬이 틀리거나 ew11 과부하 걸리는 경우(ew11 재부팅 시도)
         log('ERROR   Packet send error Please check packet or ew11 =>', obj.commandHex.toString('hex'));
+        retryCnt = 0;
     }
 }
 
 setTimeout(() => { mqttReady = true; log('INFO   MQTT ready...') }, CONST.mqttDelay);
-setInterval(commandProc, 20); 
+setInterval(commandProc, 20);
