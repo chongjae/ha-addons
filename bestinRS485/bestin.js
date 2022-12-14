@@ -224,7 +224,7 @@ const CONST = {
         { deviceId: 'Fan', subId: '', commandHex: Buffer.alloc(10, '0261010000010100006E', 'hex'), power: 'ON' }, //켜짐
         { deviceId: 'Fan', subId: '', commandHex: Buffer.alloc(10, '0261010000000100006B', 'hex'), power: 'OFF' }, //꺼짐
         { deviceId: 'Fan', subId: '', commandHex: Buffer.alloc(10, '0261030000000100006D', 'hex'), preset: 'low' }, //약(켜짐)
-        { deviceId: 'Fan', subId: '', commandHex: Buffer.alloc(10, '0261030000000200006C', 'hex'), preset: 'mid' }, //중(켜짐)
+        { deviceId: 'Fan', subId: '', commandHex: Buffer.alloc(10, '0261030000000200006C', 'hex'), preset: 'medium' }, //중(켜짐)
         { deviceId: 'Fan', subId: '', commandHex: Buffer.alloc(10, '0261030000000300006B', 'hex'), preset: 'high' }, //강(켜짐)
         { deviceId: 'Fan', subId: '', commandHex: Buffer.alloc(10, '0261070000100000007A', 'hex'), preset: 'nature OFF' }, //자연환기(꺼짐)
         { deviceId: 'Fan', subId: '', commandHex: Buffer.alloc(10, '0261070000000000006A', 'hex'), preset: 'nature ON' }, //자연환기(켜짐)
@@ -684,7 +684,7 @@ if (CONST.WALLPAD_TYPE == 'new') {
                             }
                             switch (data[6]) {
                                 case 0x01: objFound.preset = 'low'; break;
-                                case 0x02: objFound.preset = 'mid'; break;
+                                case 0x02: objFound.preset = 'medium'; break;
                                 case 0x03: objFound.preset = 'high'; break;
                             }
                             updateStatus(objFound);
@@ -831,7 +831,7 @@ if (CONST.WALLPAD_TYPE == 'old') {
                             }
                             switch (objFound.preset = data[6]) {
                                 case 0x01: objFound.preset = 'low'; break;
-                                case 0x02: objFound.preset = 'mid'; break;
+                                case 0x02: objFound.preset = 'medium'; break;
                                 case 0x03: objFound.preset = 'high'; break;
                             }
                             updateStatus(objFound);
