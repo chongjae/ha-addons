@@ -13,6 +13,8 @@ const mqtt = require('mqtt');
 // 커스텀 파서
 const Transform = require('stream').Transform;
 
+const CONFIG = require('/data/options.json');  //**** 애드온의 옵션을 불러옵니다. 이후 CONFIG.mqtt.username 과 같이 사용가능합니다. 
+
 // 각 디바이스 설정
 const portVar = {
     // 타입 정의
