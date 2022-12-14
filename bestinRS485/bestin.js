@@ -690,7 +690,7 @@ if (CONST.WALLPAD_TYPE == 'new') {
 
                     case 0x81: case 0x83: case 0x87: //제어
                         let objFoundIdx = CONST.DEVICE_COMMAND2.find(obj => obj.deviceId === 'Fan');
-                        objFoundIdx = queue.findIndex(e => ((data[2] == 0x81 & data[2] == 0x83 & data[2] == 0x87) && (data[0] == e.commandHex[0]) && (data[1] == e.commandHex[1])));
+                        objFoundIdx = queue.findIndex(e => ((data[2] == 0x81|data[2] == 0x83|data[2] == 0x87) && (data[0] == e.commandHex[0]) && (data[1] == e.commandHex[1])));
                         if (objFoundIdx > -1) {
                             log('INFO   Success command from Ack # Set State=', retryCnt);
                             queue.splice(objFoundIdx, 1);
@@ -837,7 +837,7 @@ if (CONST.WALLPAD_TYPE == 'old') {
 
                     case 0x81: case 0x83: case 0x87: //제어
                         let objFoundIdx = CONST.DEVICE_COMMAND2.find(obj => obj.deviceId === 'Fan');
-                        objFoundIdx = queue.findIndex(e => ((data[2] == 0x81 & data[2] == 0x83 & data[2] == 0x87) && (data[0] == e.commandHex[0]) && (data[1] == e.commandHex[1])));
+                        objFoundIdx = queue.findIndex(e => ((data[2] == 0x81|data[2] == 0x83|data[2] == 0x87) && (data[0] == e.commandHex[0]) && (data[1] == e.commandHex[1])));
                         if (objFoundIdx > -1) {
                             log('INFO   Success command from Ack # Set State=', retryCnt);
                             queue.splice(objFoundIdx, 1);
