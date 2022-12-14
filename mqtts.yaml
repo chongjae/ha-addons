@@ -47,6 +47,10 @@ switch:
   command_topic: "homenet/Room5/light2/command"
   state_topic: "homenet/Room5/light2/state"
   icon: mdi:lightbulb
+- name: "light_all"
+  command_topic: "homenet/LightAll/power/command"
+  state_topic: "homenet/LightAll/power/state"
+  icon: mdi:lightbulb
 - name: "outlet_1_1"
   command_topic: "homenet/Room1/outlet1/command"
   state_topic: "homenet/Room1/outlet1/state"
@@ -242,7 +246,7 @@ fan:
   preset_mode_command_template: >
     {% if value == 'low' %}
       low
-    {% elif value == 'mid' %}
+    {% elif value == 'medium' %}
       medium
     {% elif value == 'high' %}
       high
@@ -257,7 +261,7 @@ fan:
   preset_mode_value_template: >
     {% if value_json.FanSpeed == low %}
       low
-    {% elif value_json.FanSpeed == mid %}
+    {% elif value_json.FanSpeed == medium %}
       medium
     {% elif value_json.FanSpeed == high %}
       high
@@ -270,7 +274,7 @@ fan:
     {% endif %}
   preset_modes:
     - 'low'
-    - 'mid'
+    - 'medium'
     - 'high'
     - 'nature ON'
     - 'nature OFF'
