@@ -1,6 +1,6 @@
 {
   "name": "BESTIN WallPad with RS485",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "slug": "wallpad",
   "description": "BESTIN WallPad for Home Assistant",
   "arch": [
@@ -18,31 +18,46 @@
   "boot": "auto",
   "uart": true,
   "options": {
-    "sendDelay": 100,
-    "retryCount": 50,
-    "energy_type": "socket",
-    "ctrl_type": "socket",
-    "smart_type": "serial",
-    "smart_enable": "off",
-    "serial": {
-      "energy_rpiPort": "/dev/ttyUSB0",
-      "energy_windowPort": "COM0",
-      "ctrl_rpiPort": "/dev/ttyUSB0",
-      "ctrl_windowPort": "COM0",
-      "recv_rpiPort": "/dev/ttyUSB0", 
+  "serial_sendDelay": 100,
+  "socket_sendDelay": 70,
+  "serial_maxRetry": 10,
+  "socket_maxRetry": 50,
+    "energy": {
+      "rpiPort": "/dev/ttyUSB0",
+      "windowPort": "COM0",
+      "address": "192.168.0.x",
+      "port": 8899
+    }, 
+    "control": {
+      "rpiPort": "/dev/ttyUSB0",
+      "windowPort": "COM0",
+      "address": "192.168.0.x",
+      "port": 8899
+    },
+    "smart": {
+      "recv_rpiPort": "/dev/ttyUSB0",
       "recv_windowPort": "COM0",
       "send_rpiPort": "/dev/ttyUSB0",
-      "send_windowPort": "COM0"
-    }, 
-    "socket": {
-      "energy_addr": "192.168.0.x",
-      "energy_port": 8899,
-      "ctrl_addr": "192.168.0.x",
-      "ctrl_port": 8899,
+      "send_windowPort": "COM0",
       "recv_addr": "192.168.0.x",
       "recv_port": 8899,
       "send_addr": "192.168.0.x",
       "send_port": 8899
+    },
+    "port": {
+      "rpiPort": "/dev/ttyUSB0",
+      "windowPort": "COM0",
+      "address": "192.168.0.x",
+      "port": 8899
+    },
+    "rs485": {
+      "wallpad_type": "new",
+      "ev_enable": "off",
+      "energy_type": "socket",
+      "ctrl_type": "socket",
+      "recv_type": "serial",
+      "send_type": "serial",
+      "port_type": "socket"
     },
     "mqtt": {
       "broker": "192.168.0.x",
@@ -54,31 +69,46 @@
     }
   },
   "schema": {
-    "sendDelay": "int",
-    "retryCount": "int",
-    "energy_type": "list(serial|socket)",
-    "ctrl_type": "list(serial|socket)",
-    "smart_type": "list(serial|socket)",
-    "smart_enable": "list(on|off)",
-    "serial": {
-      "energy_rpiPort": "str?",      
-      "energy_windowPort": "str?",
-      "ctrl_rpiPort": "str?",
-      "ctrl_windowPort": "str?",
+  "serial_sendDelay": "int",
+  "socket_sendDelay": "int",
+  "serial_maxRetry": "int",
+  "socket_maxRetry": "int",
+    "energy": {
+      "rpiPort": "str?",
+      "windowPort": "str?",
+      "address": "str?",
+      "port": "int?"
+    },
+    "control": {
+      "rpiPort": "str?",
+      "windowPort": "str?",
+      "address": "str?",
+      "port": "int?"
+    },
+    "smart": {
       "recv_rpiPort": "str?",
       "recv_windowPort": "str?",
       "send_rpiPort": "str?",
-      "send_windowPort": "str?"
-    },
-    "socket": {
-      "energy_addr": "str?",
-      "energy_port": "int?",
-      "ctrl_addr": "str?",
-      "ctrl_port": "int?",
+      "send_windowPort": "str?",
       "recv_addr": "str?",
       "recv_port": "int?",
       "send_addr": "str?",
       "send_port": "int?"
+    },
+    "port": {
+      "rpiPort": "str?",
+      "windowPort": "str?",
+      "address": "str?",
+      "port": "int?"
+    },
+    "rs485": {
+      "wallpad_type": "list(new|old)",
+      "ev_enable": "list(on|off)",
+      "energy_type": "list(serial|socket)",
+      "ctrl_type": "list(serial|socket)",
+      "recv_type": "list(serial|socket)",
+      "send_type": "list(serial|socket)",
+      "port_type": "list(serial|socket)"
     },
     "mqtt": {
       "broker": "str",
