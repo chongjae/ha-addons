@@ -103,7 +103,7 @@
     },
     "rs485": {
       "wallpad_type": "list(new|old)",
-      "ev_enable": "list(on|off)",
+      "ev_enable": "list(on|off)?",
       "energy_type": "list(serial|socket)",
       "ctrl_type": "list(serial|socket)",
       "recv_type": "list(serial|socket)",
