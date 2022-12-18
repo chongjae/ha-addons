@@ -1,5 +1,5 @@
 {
-  "name": "BESTIN WallPad with RS485",
+  "name": "BESTIN WallPad Controller",
   "version": "1.3.0",
   "slug": "wallpad",
   "description": "BESTIN WallPad for Home Assistant",
