@@ -623,10 +623,10 @@ const commandProc = () => {
     var objfilter2 = ['Elevator', 'LightAll'];
 
     if (obj.deviceId === 'Room') {
-        energy485.write(obj.commandHex, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
+        energy.write(obj.commandHex, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
         log('INFO  ', 'Energy>> Send to Device:', obj.deviceId, obj.subId, 'light/outlet', '->', obj.state, obj.commandHex.toString('hex'));
     } else if (objfilter.includes(obj.deviceId)) {
-        control485.write(obj.commandHex, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
+        control.write(obj.commandHex, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
         log('INFO  ', 'Control>> Send to Device:', obj.deviceId, obj.subId, '->', obj.state, obj.commandHex.toString('hex'));
     } else if (objfilter2.includes(obj.deviceId)) {
         smart2.write(obj.commandHex, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
