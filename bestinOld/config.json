@@ -1,7 +1,7 @@
 {
   "name": "BESTIN Old WallPad with RS485",
   "version": "1.0.0",
-  "slug": "wallpad",
+  "slug": "old wallpad",
   "description": "BESTIN Old WallPad for Home Assistant",
   "arch": [
     "armhf",
