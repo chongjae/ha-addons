@@ -266,47 +266,149 @@ client.on("reconnect", () => {
     log("INFO   MQTT reconnection starting...");
 });
 
-const createConnection = (connectionINFO, connectionVar, port) => {
-    if (connectionINFO.type == 'serial') {
-        log(`INFO   ${connectionVar} connection type: Serial`)
-        log('INFO   initialize serial...')
-        const connection = new SerialPort({
-            path: port,
-            baudRate: 9600,
-            dataBits: 8,
-            parity: 'none',
-            stopBits: 1,
-            autoOpen: false,
-            encoding: 'hex'
-        });
-        connection.on('open', () => log(`INFO   Success open ${connectionVar} port:`, port));
-        connection.on('close', () => log(`WARNING   Close ${connectionVar} port:`, port));
-        connection.open((err) => {
-            if (err) {
-                return log(`ERROR  Failed to open ${connectionVar} port:`, err.message);
-            }
-        });
-        return connection.pipe(new CustomParser());
-    } else {
-        log(`INFO   ${connectionVar} connection type: Socket`)
-        log('INFO   initialize socket...')
-        const connection = new net.Socket();
-        connection.connect(connectionINFO.port, connectionINFO.addr, function () {
-            log(`INFO   Success connected to ${connectionVar}`, `(${connectionINFO.addr} ${connectionINFO.port})`);
-        });
-        connection.on('error', (err) => {
-            if (err.code == "ETIMEDOUT") {
-                log("ERROR   Make sure socket is activated")
-            } else { log(`ERROR   ${connectionVar} connection failed:`, err.message) }
-        });
-        return connection.pipe(new CustomParser());
-    }
-};
+// Energy
+if (energyVar.type == 'serial') {
+    log('INFO   Energy connection type: Serial')
+    log('INFO   initialize serial...')
+    energy485 = new SerialPort({
+        path: CONST.portEN,
+        baudRate: 9600,
+        dataBits: 8,
+        parity: 'none',
+        stopBits: 1,
+        autoOpen: false,
+        encoding: 'hex'
+    });
+    energy = energy485.pipe(new CustomParser());
+    energy485.on('open', () => log('INFO   Success open energy port:', CONST.portEN));
+    energy485.on('close', () => log('WARNING   Close energy port:', CONST.portEN));
+    energy485.open((err) => {
+        if (err) {
+            return log('ERROR  Failed to open energy port:', err.message);
+        }
+    });
+}
+else {
+    log('INFO   Energy connection type: Socket')
+    log('INFO   initialize socket...')
+    energy485 = new net.Socket();
+    energy485.connect(energyVar.port, energyVar.addr, function () {
+        log('INFO   Success connected to energy', "(" + energyVar.addr, energyVar.port + ")");
+    });
+    energy485.on('error', (err) => {
+        log('ERROR   Energy connection failed:', err.message)
+    });
+    energy = energy485.pipe(new CustomParser());
+}
 
-energy = createConnection(energyVar, 'energy', CONST.portEN);
-control = createConnection(controlVar, 'control', CONST.portCTRL);
-smart1 = createConnection(smart1Var, 'smart1', CONST.portRECV);
-smart2 = createConnection(smart2Var, 'smart2', CONST.portSEND);
+// Control 
+if (controlVar.type == 'serial') {
+    log('INFO   Control connection type: Serial')
+    log('INFO   initialize serial...')
+    control485 = new SerialPort({
+        path: CONST.portCTRL,
+        baudRate: 9600,
+        dataBits: 8,
+        parity: 'none',
+        stopBits: 1,
+        autoOpen: false,
+        encoding: 'hex'
+    });
+    control = control485.pipe(new CustomParser());
+    control485.on('open', () => log('INFO   Success open control port:', CONST.portCTRL));
+    control485.on('close', () => log('WARNING   Close control port:', CONST.portCTRL));
+    control485.open((err) => {
+        if (err) {
+            return log('ERROR   Failed to open control port:', err.message);
+        }
+    });
+}
+else {
+    log('INFO   Control connection type: Socket')
+    log('INFO   initialize socket...')
+    control485 = new net.Socket();
+    control485.connect(controlVar.port, controlVar.addr, function () {
+        log('INFO   Success connected to control', "(" + controlVar.addr, controlVar.port + ")");
+    });
+    control485.on('error', (err) => {
+        if (err.code == "ETIMEDOUT") {
+            log("ERROR   Make sure socket is activated")
+        } else { log('ERROR   Control connection failed:', err.message) }
+    });
+    control = control485.pipe(new CustomParser());
+}
+
+// Smart1
+if (smart1Var.type == 'serial') {
+    log('INFO   Smart1 connection type: Serial')
+    log('INFO   initialize serial...')
+    smart1485 = new SerialPort({
+        path: CONST.portRECV,
+        baudRate: 9600,
+        dataBits: 8,
+        parity: 'none',
+        stopBits: 1,
+        autoOpen: false,
+        encoding: 'hex'
+    });
+    smart1 = smart1485.pipe(new CustomParser());
+    smart1485.on('open', () => log('INFO   Success open smart1 port:', CONST.portRECV));
+    smart1485.on('close', () => log('WARNING   Close smart1 port:', CONST.portRECV));
+    smart1485.open((err) => {
+        if (err) {
+            return log('ERROR   Failed to open smart1 port:', err.message);
+        }
+    });
+} else if (smart1Var.type == 'socket') {
+    log('INFO   Smart1 connection type: Socket')
+    log('INFO   initialize socket...')
+    smart1485 = new net.Socket();
+    smart1485.connect(smart1Var.port, smart1Var.addr, function () {
+        log('INFO   Success connected to smart1', "(" + smart1Var.addr, smart1Var.port + ")");
+    });
+    smart1485.on('error', (err) => {
+        if (err.code == "ETIMEDOUT") {
+            log("ERROR   Make sure socket is activated")
+        } else { log('ERROR   Smart1 connection failed:', err.message) }
+    });
+    smart1 = smart1485.pipe(new CustomParser());
+}
+
+// Smart2
+if (smart2Var.type == 'serial') {
+    log('INFO   Smart2 connection type: Serial')
+    log('INFO   initialize serial...')
+    smart2485 = new SerialPort({
+        path: CONST.portSEND,
+        baudRate: 9600,
+        dataBits: 8,
+        parity: 'none',
+        stopBits: 1,
+        autoOpen: false,
+        encoding: 'hex'
+    });
+    smart2 = smart2485.pipe(new CustomParser());
+    smart2485.on('open', () => log('INFO   Success open smart2 port:', CONST.portSEND));
+    smart2485.on('close', () => log('WARNING   Close smart2 port:', CONST.portSEND));
+    smart2485.open((err) => {
+        if (err) {
+            return log('ERROR   Failed to open smart2 port:', err.message);
+        }
+    });
+} else if (smart2Var.type == 'socket') {
+    log('INFO   Smart2 connection type: Socket')
+    log('INFO   initialize socket...')
+    smart2485 = new net.Socket();
+    smart2485.connect(smart2Var.port, smart2Var.addr, function () {
+        log('INFO   Success connected to smart2', "(" + smart2Var.addr, smart2Var.port + ")");
+    });
+    smart2485.on('error', (err) => {
+        if (err.code == "ETIMEDOUT") {
+            log("ERROR   Make sure socket is activated")
+        } else { log('ERROR   Smart2 connection failed:', err.message) }
+    });
+    smart2 = smart2485.pipe(new CustomParser());
+}
 
 function CheckSum(data, count) {
     var sum = AddSum(data, count);
@@ -623,13 +725,13 @@ const commandProc = () => {
     var objfilter2 = ['Elevator', 'LightAll'];
 
     if (obj.deviceId === 'Room') {
-        energy.write(obj.commandHex, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
+        energy485.write(obj.commandHex, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
         log('INFO  ', 'Energy>> Send to Device:', obj.deviceId, obj.subId, 'light/outlet', '->', obj.state, obj.commandHex.toString('hex'));
     } else if (objfilter.includes(obj.deviceId)) {
-        control.write(obj.commandHex, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
+        control485.write(obj.commandHex, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
         log('INFO  ', 'Control>> Send to Device:', obj.deviceId, obj.subId, '->', obj.state, obj.commandHex.toString('hex'));
     } else if (objfilter2.includes(obj.deviceId)) {
-        smart2.write(obj.commandHex, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
+        smart2485.write(obj.commandHex, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
         log('INFO  ', 'Smart>> Send to Device:', obj.deviceId, obj.subId, '->', obj.state, obj.commandHex.toString('hex'));
     }
     obj.sentTime = lastReceive;
