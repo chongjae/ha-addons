@@ -50,7 +50,7 @@
       "password": "pw",
       "port": 1883,
       "receiveDelay": 5000,
-      "prefix": "homenet"
+      "prefix": "bestin"
     }
   },
   "schema": {
