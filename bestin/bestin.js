@@ -57,10 +57,10 @@
      portRECV: process.platform.startsWith('win') ? smart1Var.serName : smart1Var.serName,
      portSEND: process.platform.startsWith('win') ? smart2Var.serName : smart2Var.serName,
      // SerialPort Delay(ms)
-     SEND_DELAY: 100,
-     MAX_RETRY: 30,
+     SEND_DELAY: CONFIG.sendDelay,
+     MAX_RETRY: CONFIG.maxRetry,
      // MQTT 수신 Delay(ms)
-     MQTT_DELAY: 5000,
+     MQTT_DELAY: CONFIG.mqtt.receiveDelay,
      // 메시지 Prefix 상수
      MSG_PREFIX: [0x02],
      MSG_HEADER: [0x31, 0x41, 0x42, 0xD1, 0x28, 0x61, 0xC1],
