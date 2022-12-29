@@ -241,7 +241,7 @@
  var discoveryMessage = {};
  var retryCnt = 0;  // 수정금지
  //var packet1 = {};  //energy
- //var packet2 = {};  //control
+ var packet2 = {};  //control
  var packet3 = {};  //smart
  
  // MQTT-Broker 연결 
