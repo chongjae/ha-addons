@@ -570,6 +570,10 @@
      lastReceive = new Date().getTime();
      //console.log('Control>>', data.toString('hex'));
  
+     packet2 = {
+         timestamp: data.slice(4, 5).toString('hex')
+     }
+  
      if (!data.length >= 10) return;
      if (!data.length >= 16) return;
      //log(`packet prefix not defined! ${data.toString('hex')} #change to rs485 A/B`);
@@ -601,7 +605,7 @@
  const updateStatus = (obj) => {
      if (!obj) return null;
  
-     const arrFilter = ['deviceId', 'subId', 'stateHex', 'commandHex', 'sentTime', 'component'];
+     const arrFilter = ['deviceId', 'subId', 'stateHex', 'commandHex', 'sentTime', 'component', 'state'];
      const hideFilter = ['curPower1', 'curPower2', 'curPower3', 'curTemp'];
      const arrStateName = Object.keys(obj).filter(stateName => !arrFilter.includes(stateName));
  
@@ -778,6 +782,7 @@
              command = CONST.DEVICE_COMMAND.find(
                  obj => obj.deviceId + obj.subId === topics[1] && obj.hasOwnProperty('setTemp')
              );
+             command.commandHex[4] = packet2.timestamp;
              command.commandHex[7] = Number(value);
              command.setTemp = String(Number(value));
              data = command.commandHex;
@@ -786,6 +791,7 @@
              command = CONST.DEVICE_COMMAND.find(
                  obj => obj.deviceId + obj.subId === topics[1] && obj.hasOwnProperty('timer')
              );
+             command.commandHex[3] = packet2.timestamp;
              command.commandHex[5] = Number(value);
              command.timer = String(Number(value));
              data = command.commandHex;
