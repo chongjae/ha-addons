@@ -1,6 +1,6 @@
 {
     "name": "BESTIN WallPad Controller",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "slug": "bestin_wallpad",
     "description": "BESTIN WallPad for Home Assistant",
     "arch": [
