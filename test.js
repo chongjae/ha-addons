@@ -736,6 +736,7 @@ smart2.on('data', function (data) {
 
     deviceCommand = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'elevator');
     deviceCommand.commandHex = packet;
+    //console.log(packet);
 });
 
 // MQTT Discovery 수행
