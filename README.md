@@ -1,6 +1,4 @@
 # bestin
-[![github-repository]
-
 HDC BESTIN WallPad for HomeAssistant Addon #HA 
 
 ### About
@@ -12,4 +10,3 @@ HDC BESTIN WallPad for HomeAssistant Addon #HA
 
 -------------------------------------------------------------------------------------
 
-[github-repository]: https://github.com/harwin1/bestin-v1
