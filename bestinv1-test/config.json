@@ -1,8 +1,8 @@
 {
-  "name": "HDC BESTIN WallPad RS485 Addon",
+  "name": "bestin wallpad test version",
   "version": "1",
   "slug": "bestin_wallpad",
-  "description": "현대산업개발 베스틴 월패드용 애드온입니다",
+  "description": "테스트 버전 입니다.",
   "arch": [
     "armhf",
     "armv7",
