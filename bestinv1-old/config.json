@@ -1,0 +1,80 @@
+{
+  "name": "HDC BESTIN Old version WallPad RS485 Addon",
+  "version": "1.1.0",
+  "slug": "bestin_wallpad_old",
+  "description": "현대산업개발 구 버전 베스틴 월패드용 애드온입니다",
+  "arch": [
+    "armhf",
+    "armv7",
+    "aarch64",
+    "amd64",
+    "i386"
+  ],
+  "map": [
+    "share:rw"
+  ],
+  "url": "https://github.com/harwin1/bestin-v1",
+  "startup": "application",
+  "boot": "auto",
+  "uart": true,
+  "options": {
+    "sendDelay": 100,
+    "maxRetry": 30,
+    "rs485": {
+      "type": "socket",
+      "serName": "/dev/ttyUSB0",
+      "address": "192.168.0.x",
+      "port": 8899
+    }, 
+    "smart1": {
+      "type": "socket",
+      "serName": "/dev/ttyUSB0",
+      "address": "192.168.0.x",
+      "port": 8899
+    },
+    "smart2": {
+      "type": "socket",
+      "serName": "/dev/ttyUSB0",
+      "address": "192.168.0.x",
+      "port": 8899
+    },
+    "mqtt": {
+      "broker": "192.168.0.x",
+      "username": "id",
+      "password": "pw",
+      "port": 1883,
+      "receiveDelay": 5000,
+      "prefix": "homenet"
+    }
+  },
+  "schema": {
+  "sendDelay": "int",
+  "maxRetry": "int",
+    "rs485": {
+      "type": "list(serial|socket)",
+      "serName": "str?",
+      "address": "str?",
+      "port": "int?"
+    },
+    "smart1": {
+      "type": "list(serial|socket)",
+      "serName": "str?",
+      "address": "str?",
+      "port": "int?"
+    },
+    "smart2": {
+      "type": "list(serial|socket)",
+      "serName": "str?",
+      "address": "str?",
+      "port": "int?"
+    },
+    "mqtt": {
+      "broker": "str",
+      "username": "str",
+      "password": "str",
+      "port": "int",
+      "receiveDelay": "int",
+      "prefix": "str"
+    }
+  }
+}
