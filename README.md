@@ -1,5 +1,5 @@
 # bestin
-[![version_badge][github-repository]
+[![github-repository]
 
 HDC BESTIN WallPad for HomeAssistant Addon #HA 
 
