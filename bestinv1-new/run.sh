@@ -7,7 +7,7 @@ if [ ! -f $SHARE_DIR/bestin.js ]; then
 	mv /bestin.js $SHARE_DIR
 fi
 
-echo "[Info] Run bestin-v1 Addon .."
+echo "INFO   Run bestin-v1 Addon .."
 cd $SHARE_DIR
 node $SHARE_DIR/bestin.js
 
