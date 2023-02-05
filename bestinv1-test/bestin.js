@@ -15,7 +15,7 @@ const xml2js = require('xml2js');
 
 // 커스텀 파서
 const Transform = require('stream').Transform;
-const CONFIG = require('./config.json');
+const CONFIG = require('/data/options.json');
 
 // 로그 표시 
 const log = (...args) => console.log('[' + (new Date()).toLocaleString() + ']', 'INFO     ', args.join(' '));
@@ -25,8 +25,8 @@ const error = (...args) => console.error('[' + (new Date()).toLocaleString() + '
 const CONST = {
     // 시리얼 전송 설정
     DEVICE_READY_DELAY: 5000,
-    DEVICE_SEND_RETRY_DELAY: CONFIG.options.retry_delay,
-    DEVICE_SEND_RETRY_COUNT: CONFIG.options.retry_count,
+    DEVICE_SEND_RETRY_DELAY: CONFIG.retry_delay,
+    DEVICE_SEND_RETRY_COUNT: CONFIG.retry_count,
     // 메시지 Prefix 상수
     MSG_PREFIX: [0x02],
     MSG_HEADERS: [0x31, 0x41, 0x42, 0xd1, 0x28, 0x61, 0xc1],
@@ -345,17 +345,17 @@ class HomeRS485 {
         this._timestamp = undefined;
 
         this._mqttClient = this.MqttClient();
-        const { energy, control } = CONFIG.options;
+        const { energy, control } = CONFIG;
         this._socketWriteEnergy = this.createSocketConnection(energy, 'energy');
         this._socketWriteControl = this.createSocketConnection(control, 'control');
         this._iparkServerInfo = this.IparkLoginRequest();
     }
 
     MqttClient() {
-        const client = mqtt.connect('mqtt://' + CONFIG.options.mqtt.broker, {
-            port: CONFIG.options.mqtt.port,
-            username: CONFIG.options.mqtt.username,
-            password: CONFIG.options.mqtt.password,
+        const client = mqtt.connect('mqtt://' + CONFIG.mqtt.broker, {
+            port: CONFIG.mqtt.port,
+            username: CONFIG.mqtt.username,
+            password: CONFIG.mqtt.password,
             clientId: 'BESTIN_WALLPAD',
         });
 
