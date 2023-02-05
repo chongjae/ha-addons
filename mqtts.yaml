@@ -138,6 +138,28 @@ switch:
   payload_on: 'on'
   payload_off: 'off'
 
+sensor:
+- name: "bestin_energy_electric_consumption"
+  state_topic: "bestin/energy/electric/current/state"
+  unit_of_measurement: "kWh"
+  icon: "mdi:flash"
+- name: "bestin_energy_heat_consumption"
+  state_topic: "bestin/energy/heat/current/state"
+  unit_of_measurement: "MWh"
+  icon: "mdi:radiator"
+- name: "bestin_energy_water_consumption"
+  state_topic: "bestin/energy/water/current/state"
+  unit_of_measurement: "m³"
+  icon: "mdi:water"
+- name: "bestin_energy_hotwater_consumption"
+  state_topic: "bestin/energy/hotwater/current/state"
+  unit_of_measurement: "m³"
+  icon: "mdi:hot-tub"
+- name: "bestin_energy_gas_consumption"
+  state_topic: "bestin/energy/gas/current/state"
+  unit_of_measurement: "m³"
+  icon: "mdi:fire"
+
 fan:
 - name: "bestin_ventil_1"
   state_topic: "bestin/ventil/1/power/state"
