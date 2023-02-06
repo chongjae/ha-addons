@@ -1,7 +1,7 @@
 {
-  "name": "bestin wallpad test version",
-  "version": "test_1",
-  "slug": "bestin_wallpad_test version",
+  "name": "HDC BESTIN WallPad Test",
+  "version": "1_20230206",
+  "slug": "bestin_wallpad_test",
   "description": "테스트 버전 입니다.",
   "arch": [
     "armhf",
