@@ -15,7 +15,7 @@ const xml2js = require('xml2js');
 
 // 커스텀 파서
 const Transform = require('stream').Transform;
-const CONFIG = require('/data/options.json');  
+const CONFIG = require('/data/options.json');
 
 
 // 각 디바이스 설정
@@ -325,7 +325,7 @@ function startInterval(seconds, callback) {
 }
 
 async function serverControl(switch_num, switch_action) {
-    //await cookieParser();
+    await cookieParser();
     const cookie = JSON.parse(fs.readFileSync('./cookie.json', 'utf8'));
     const options_light_command = {
         url: `http://${serverVar.server}/webapp/data/getHomeDevice.php`,
@@ -387,16 +387,16 @@ function handleEnergyStateParser(data) {
 
             // 콘센트
             room_idx = data[5] & 0x0f;
-            standby_power = ((data[7] >> 4 & 1) ? 'on' : 'off');
+            let standby_power = ((data[7] >> 4 & 1) ? 'on' : 'off');
             for (let i = 0; i < 3; i++) {
-                result = ((data[7] & (0x01 << i)) ? 'on' : 'off');
+                let state = ((data[7] & (0x01 << i)) ? 'on' : 'off');
                 i1 = 14 + 2 * i;
                 i2 = i1 + 2;
                 if (data.length > i2) {
                     value = parseInt(data.slice(i1, i2).toString('hex'), 16)
-                    consumption = value / 10;
+                    var consumption = value / 10;
                 } else {
-                    consumption = 0;
+                    var consumption = 0;
                 }
                 result = {
                     device: 'outlet',
@@ -696,12 +696,12 @@ function mqttDiscovery(obj, stateName) {
         //let maxIndex = (obj.room_index == 1) ? 3 : 2;
         //for (let index = 1; index <= maxIndex; index++) {
         //console.log('room_index:', obj.room_index, 'index:', index)
-        var discoveryTopic = `homeassistant/light/bestin_wallpad/light_${obj.room_index}_${index}/config`;
+        var discoveryTopic = `homeassistant/light/bestin_wallpad/light_${obj.room_index}_${obj.index}/config`;
         var discoveryPayload = {
-            name: `bestin_light_${obj.room_index}_${index}`, //bestin_light_1_1
-            cmd_t: `bestin/light/${obj.room_index}_${index}/power/command`,
-            stat_t: `bestin/light/${obj.room_index}_${index}/power/state`,
-            uniq_id: `light_${obj.room_index}_${index}`,
+            name: `bestin_light_${obj.room_index}_${obj.index}`, //bestin_light_1_1
+            cmd_t: `bestin/light/${obj.room_index}_${obj.index}/power/command`,
+            stat_t: `bestin/light/${obj.room_index}_${obj.index}/power/state`,
+            uniq_id: `light_${obj.room_index}_${obj.index}`,
             pl_on: 'on',
             pl_off: 'off',
             opt: false,
@@ -720,12 +720,12 @@ function mqttDiscovery(obj, stateName) {
     if (obj.device == 'outlet') {
         if (stateName == 'power') {
             //for (let index = 1; index <= 2; index++) {
-            var discoveryTopic = `homeassistant/switch/bestin_wallpad/outlet_${obj.room_index}_${index}/config`;
+            var discoveryTopic = `homeassistant/switch/bestin_wallpad/outlet_${obj.room_index}_${obj.index}/config`;
             var discoveryPayload = {
-                name: `bestin_outlet_${obj.room_index}_${index}`, //bestin_outlet_1_1
-                cmd_t: `bestin/outlet/${obj.room_index}_${index}/power/command`,
-                stat_t: `bestin/outlet/${obj.room_index}_${index}/power/state`,
-                uniq_id: `outlet_${obj.room_index}_${index}`,
+                name: `bestin_outlet_${obj.room_index}_${obj.index}`, //bestin_outlet_1_1
+                cmd_t: `bestin/outlet/${obj.room_index}_${obj.index}/power/command`,
+                stat_t: `bestin/outlet/${obj.room_index}_${obj.index}/power/state`,
+                uniq_id: `outlet_${obj.room_index}_${obj.index}`,
                 pl_on: 'on',
                 pl_off: 'off',
                 ret: false,
@@ -743,11 +743,11 @@ function mqttDiscovery(obj, stateName) {
         if (stateName == 'current') {
             //let maxIndex = (obj.room_index == 1) ? 3 : 2;
             //for (let index = 1; index <= maxIndex; index++) {
-            var discoveryTopic = `homeassistant/sensor/bestin_wallpad/current_${obj.room_index}_${index}/config`;
+            var discoveryTopic = `homeassistant/sensor/bestin_wallpad/current_${obj.room_index}_${obj.index}/config`;
             var discoveryPayload = {
-                name: `bestin_power_usage_${obj.room_index}_${index}`, //bestin_power_usage_1_1
-                stat_t: `bestin/outlet/${obj.room_index}_${index}/current/state`,
-                uniq_id: `power_usage_${obj.room_index}_${index}`,
+                name: `bestin_power_usage_${obj.room_index}_${obj.index}`, //bestin_power_usage_1_1
+                stat_t: `bestin/outlet/${obj.room_index}_${obj.index}/current/state`,
+                uniq_id: `power_usage_${obj.room_index}_${obj.index}`,
                 unit_of_meas: 'Wh',
                 ic: 'mdi:lightning-bolt',
                 device: {
@@ -905,7 +905,7 @@ const updateStatus = (obj) => {
         if (statusChanged) {
             homeStatus[key] = obj[stateName];
             const topic = createMqttTopic(obj, stateName);
-            client.publish(topic, obj[stateName]?.toString(), { retain: true });
+            client.publish(topic, String(obj[stateName]), { retain: true });
 
             if (stateName !== 'current') {
                 log('INFO     publish to MQTT:', topic, '=', obj[stateName]);
@@ -940,15 +940,27 @@ client.on('message', (topic, message) => {
         const topic_delimiter = topics[2]?.split("_");
         serverControl(topic_delimiter[1], value);
     } else {
-        makePacket(topics, value);
         if (topics[0] == CONST.TOPIC_PRFIX) {
+            makePacket(topics, value);
 
+            if (!packetCommnad) {
+                warn(`unknown device: ${topics[1]}`);
+                return;
+            }
+            if (!packetCommnad.device.includes(topics[1])) {
+                warn(`unknown command: ${topics[3]}`);
+                return;
+            }
+            if (!topics[3]) {
+                warn(`no payload value: ${topics[3]}`);
+                return;
+            }
+            log('INFO     Receive from MQTT:', topic, ':', value);
+            packetCommnad.sentTime = Date.now() - CONST.sendDelay;
+            queue.push(packetCommnad);
+            updateStatus(packetCommnad);
+            retryCnt = 0;
         }
-        log('INFO     Receive from MQTT:', topic, ':', value);
-        packetCommnad.sentTime = Date.now() - CONST.sendDelay;
-        queue.push(packetCommnad);
-        updateStatus(packetCommnad);
-        retryCnt = 0;
     }
 });
 
@@ -978,8 +990,6 @@ const commandProc = () => {
             control.connection.write(commandHex, handleWriteError);
             log('INFO     Send to Device:', commandHex.toString('hex'));
             break;
-        //case 'elevator':
-        //    break;
     }
     obj.sentTime = lastReceive;
 
