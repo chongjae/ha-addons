@@ -78,13 +78,6 @@
 * serial: USB to RS485 혹은 TTL to RS485를 이용하는 경우
 * socket: EW11을 이용하는 경우
 
-#### `ipark_server` 
-* 단지 서버 연결을 위해 서버 계정 정보를 입력합니다. 
-* address / username / password 필수 항목입니다.
-
-#### `ipark_server_device` 
-* 단지 서버에서 가져올 기기 목록을 설정합니다. (true/ false)
-
 ### serial: (_port\type 가 serial 인 경우)
 #### `ser_path`
 * Supervisor -> System -> HARDWARE 버튼을 눌러 serial에 적혀있는 장치 이름을 확인해서 적어주세요.
@@ -112,6 +105,13 @@
 
 #### prefix (기본값: bestin)
 * MQTT topic의 시작 단어를 변경합니다. 기본값으로 두시면 됩니다.
+
+### ipark_server:
+* 단지 서버 연결을 위해 서버 계정 정보를 입력합니다. 
+* address / username / password 필수 항목입니다.
+
+#### ipark_server_device:
+* 단지 서버에서 가져올 기기 목록을 설정합니다. (true/ false)
 
 ### rs485:
 #### retry_delay (기본값: 100)
