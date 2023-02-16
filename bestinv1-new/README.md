@@ -110,7 +110,7 @@
 * 단지 서버 연결을 위해 서버 계정 정보를 입력합니다. 
 * address / username / password 필수 항목입니다.
 
-#### ipark_server_device:
+### ipark_server_device:
 * 단지 서버에서 가져올 기기 목록을 설정합니다. (true/ false)
 
 ### rs485:
