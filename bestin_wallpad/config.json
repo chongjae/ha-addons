@@ -1,8 +1,8 @@
 {
-  "name": "HDC BESTIN Old version WallPad RS485 Addon",
-  "version": "1.1.0",
-  "slug": "bestin_wallpad_old version",
-  "description": "현대산업개발 구 버전 베스틴 월패드용 애드온입니다",
+  "name": "HDC BESTIN WallPad RS485 Addon",
+  "version": "1.6.0",
+  "slug": "bestin_wallpad",
+  "description": "현대산업개발 베스틴 월패드용 애드온입니다.",
   "arch": [
     "armhf",
     "armv7",
@@ -18,63 +18,91 @@
   "boot": "auto",
   "uart": true,
   "options": {
-    "sendDelay": 100,
-    "maxRetry": 30,
     "rs485": {
+      "retry_delay": 100,
+      "retry_count": 20,
+      "ipark_server_enabled": true,
+      "ipark_server_scan": 300,
+      "packet_log_enabled": false,
+      "packet_log_time": 10
+    },
+    "energy_port": {
       "type": "socket",
-      "serName": "/dev/ttyUSB0",
-      "address": "192.168.0.x",
-      "port": 8899
-    }, 
-    "smart1": {
-      "type": "socket",
-      "serName": "/dev/ttyUSB0",
-      "address": "192.168.0.x",
+      "ser_path": "/dev/ttyUSB0",
+      "address": "192.168.0.12",
       "port": 8899
     },
-    "smart2": {
+    "control_port": {
       "type": "socket",
-      "serName": "/dev/ttyUSB0",
-      "address": "192.168.0.x",
+      "ser_path": "/dev/ttyUSB0",
+      "address": "192.168.0.18",
       "port": 8899
+    },
+    "ipark_server": {
+      "address": "59.7.82.99",
+      "username": "hm1066833",
+      "password": "moon0427**"
+    },
+    "ipark_server_device": {
+      "living_light": true,
+      "vehicle": true,
+      "delivery": true,
+      "energy": false
+    },
+    "file_name": {
+      "packet_log": "/share/packet_log.txt"
     },
     "mqtt": {
-      "broker": "192.168.0.x",
-      "username": "id",
-      "password": "pw",
+      "broker": "192.168.0.28",
+      "username": "harwin",
+      "password": "mosquitto",
       "port": 1883,
-      "receiveDelay": 5000,
-      "prefix": "homenet"
+      "topic_prefix": "bestin",
+      "discovery_register": true
     }
   },
   "schema": {
-  "sendDelay": "int",
-  "maxRetry": "int",
     "rs485": {
+      "retry_delay": "int(0, 300)",
+      "retry_count": "int(0, 50)",
+      "ipark_server_enabled": "bool",
+      "ipark_server_scan": "int(0, 300)",
+      "packet_log_enabled": "bool",
+      "packet_log_time": "int(0, 300)"
+    },
+    "energy_port": {
       "type": "list(serial|socket)",
-      "serName": "str?",
+      "ser_path": "str?",
       "address": "str?",
       "port": "int?"
     },
-    "smart1": {
+    "control_port": {
       "type": "list(serial|socket)",
-      "serName": "str?",
+      "ser_path": "str?",
       "address": "str?",
       "port": "int?"
     },
-    "smart2": {
-      "type": "list(serial|socket)",
-      "serName": "str?",
-      "address": "str?",
-      "port": "int?"
+    "ipark_server": {
+      "address": "str",
+      "username": "str",
+      "password": "str"
+    },
+    "ipark_server_device": {
+      "living_light": "bool",
+      "vehicle": "bool",
+      "delivery": "bool",
+      "energy": "bool"
     },
     "mqtt": {
       "broker": "str",
       "username": "str",
       "password": "str",
       "port": "int",
-      "receiveDelay": "int",
-      "prefix": "str"
+      "topic_prefix": "str",
+      "discovery_register": "bool"
+    },
+    "file_name": {
+      "packet_log": "str?"
     }
   }
 }
