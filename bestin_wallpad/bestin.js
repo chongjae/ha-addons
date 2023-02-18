@@ -724,7 +724,7 @@ class _HOMERS485 {
 
         let registCover = setImmediate(() => {
             if (this._discoveryRegist === false) {
-                if (CONFIG.mqtt.discovery_register) { this.mqttRegistDiscover(device, roomIdx, propertyName) };
+                if (CONFIG.mqtt.discovery_regist) { this.mqttRegistDiscover(device, roomIdx, propertyName) };
             } else {
                 return true;
             }
