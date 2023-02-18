@@ -31,7 +31,7 @@ const MSG_INFO = [
     {
         device: 'light', header: 0x31, command: 0x01, length: 13, request: 'set',
         setPropertyToMsg: (b, i, n, v) => {
-            let id = n.slice(5, 6), val = (v == 'on' ? 0x80 : 0x00), on = (v == 'on' ? 0x04 : 0x00);
+            let id = (n.replace(/[^0-9]/g, "") - 1), val = (v == 'on' ? 0x80 : 0x00), on = (v == 'on' ? 0x04 : 0x00);
             b[5] = i & 0x0F;
             if (n.includes('power')) b[6] = ((0x01 << id) | val), b[11] = on;
             else if (n == 'batch') b[6] = (v == 'on' ? 0x8F : 0x0F), b[11] = on;
@@ -43,7 +43,7 @@ const MSG_INFO = [
     {
         device: 'outlet', header: 0x31, command: 0x01, length: 13, request: 'set',
         setPropertyToMsg: (b, i, n, v) => {
-            let id = n.slice(5, 6), val = (v == 'on' ? 0x80 : 0x00), on = (v == 'on' ? (0x09 << id) : 0x00);
+            let id = (n.replace(/[^0-9]/g, "") - 1), val = (v == 'on' ? 0x80 : 0x00), on = (v == 'on' ? (0x09 << id) : 0x00);
             b[5] = i & 0x0F;
             if (n.includes('power')) b[7] = ((0x01 << id) | val), b[11] = on;
             else if (n == 'standby') b[8] = (v == 'on' ? 0x83 : 0x03);
@@ -100,7 +100,7 @@ const MSG_INFO = [
             var propArr = []; let m = (b[6].toString(16).slice(0, 1) == 'c' ? 4 : 3); let num = (b[5] & 0x0F) == 1 ? m : 2;
             for (let i = 0; i < num; i++) {
                 propArr.push({
-                    device: 'light', roomIdx: b[5] & 0x0F, propertyName: 'power' + i,
+                    device: 'light', roomIdx: b[5] & 0x0F, propertyName: 'power' + (i + 1),
                     propertyValue: ((b[6] & (1 << i)) ? 'on' : 'off'),
                 },
                     {
@@ -123,11 +123,11 @@ const MSG_INFO = [
             for (let i = 0; i < num; i++) {
                 consumption = b.length > (i1 = 14 + 2 * i) + 2 ? parseInt(b.slice(i1, i1 + 2).toString('hex'), 16) / 10 : 0;
                 propArr.push({
-                    device: 'outlet', roomIdx: b[5] & 0x0F, propertyName: 'power' + i,
+                    device: 'outlet', roomIdx: b[5] & 0x0F, propertyName: 'power' + (i + 1),
                     propertyValue: ((b[7] & (1 << i)) ? 'on' : 'off'),
                 },
                     {
-                        device: 'outlet', roomIdx: b[5] & 0x0F, propertyName: 'usage' + i,
+                        device: 'outlet', roomIdx: b[5] & 0x0F, propertyName: 'usage' + (i + 1),
                         propertyValue: consumption,
                     },
                     {
@@ -367,7 +367,7 @@ class _HOMERS485 {
                 }
                 break;
             case 'outlet':
-                const component = Idx.includes("usage") ? "sensor" : "switch";
+                let component = Idx.includes("usage") ? "sensor" : "switch";
                 var topic = `homeassistant/${component}/bestin_wallpad/outlet_${roomIdx}_${Idx}/config`;
                 var payload = {
                     name: `bestin_outlet_${roomIdx}_${Idx}`,
@@ -499,16 +499,7 @@ class _HOMERS485 {
                 }
                 break;
         }
-        setTimeout(() => {
-            this._discoveryRegist = true;
-        }, 10000);
-        if (this._discoveryRegist) {
-            return;
-        }
-        if (!this._discoveryRegist) {
-            //log('Add new device: ', topic);
-            this._mqttClient.publish(topic, JSON.stringify(payload), { retain: true });
-        }
+        this._mqttClient.publish(topic, JSON.stringify(payload), { retain: true });
     }
 
     // 패킷 체크섬 검증
@@ -726,12 +717,22 @@ class _HOMERS485 {
         let deviceStatus = this._deviceStatus.find(o => o.device === device && o.roomIdx === roomIdx);
         if (!deviceStatus) {
             deviceStatus = this.putStatusProperty(device, roomIdx);
-            //if (CONFIG.mqtt.discovery_register) { this.MqttDiscovery(device, roomIdx, propertyName) };
         }
         deviceStatus.property[propertyName] = propertyValue;
 
         this.mqttClientUpdate(device, roomIdx, propertyName, propertyValue);
-        if (CONFIG.mqtt.discovery_register) { this.mqttRegistDiscover(device, roomIdx, propertyName) };
+
+        let registCover = setImmediate(() => {
+            if (this._discoveryRegist === false) {
+                if (CONFIG.mqtt.discovery_register) { this.mqttRegistDiscover(device, roomIdx, propertyName) };
+            } else {
+                return true;
+            }
+        });
+        setTimeout(() => {
+            clearImmediate(registCover);
+            this._discoveryRegist = true;
+        }, 10000);
     }
 
     IparkLoginRequest() {
@@ -1055,9 +1056,14 @@ class _HOMERS485 {
     IparkServerCommand(options, num, act) {
         request.get(options, (error, response) => {
             if (!error && response.statusCode === 200) {
-                let unitNum = num.replace(/switch/g, 'power');
-                log('request Successful:', unitNum, act);
-                this.mqttClientUpdate('light', 'living', unitNum, act)
+                try {
+                    let unitNum = num.replace(/switch/g, 'power');
+                    log('request Successful:', unitNum, act);
+                    this.mqttClientUpdate('light', 'living', unitNum, act);
+                } catch (e) {
+                    warn(`request failed light with error: ${e}`);
+                    return;
+                }
             } else {
                 warn(`request failed with error: ${error}`);
                 return;
