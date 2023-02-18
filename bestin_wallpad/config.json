@@ -1,6 +1,6 @@
 {
   "name": "HDC BESTIN WallPad RS485 Addon",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "slug": "bestin_wallpad",
   "description": "현대산업개발 베스틴 월패드용 애드온입니다.",
   "arch": [
@@ -18,38 +18,38 @@
   "boot": "auto",
   "uart": true,
   "options": {
-    "ipark_server_enabled": true,
-    "ipark_server_scan": 60,
     "rs485": {
       "retry_delay": 100,
       "retry_count": 20,
+      "ipark_server_enabled": true,
+      "ipark_server_scan": 300,
       "packet_log_enabled": false,
       "packet_log_time": 10
     },
-    "energyPort": {
+    "energy_port": {
       "type": "socket",
       "ser_path": "/dev/ttyUSB0",
       "address": "192.168.0.12",
       "port": 8899
     },
-    "controlPort": {
+    "control_port": {
       "type": "socket",
       "ser_path": "/dev/ttyUSB0",
       "address": "192.168.0.18",
       "port": 8899
     },
-    "iparkServer": {
+    "ipark_server": {
       "address": "59.7.82.99",
       "username": "hm1066833",
       "password": "moon0427**"
     },
-    "iparkServerDevice": {
+    "ipark_server_device": {
       "living_light": true,
       "vehicle": true,
       "delivery": true,
       "energy": false
     },
-    "fileName": {
+    "file_name": {
       "packet_log": "/share/packet_log.txt"
     },
     "mqtt": {
@@ -62,32 +62,32 @@
     }
   },
   "schema": {
-    "ipark_server_enabled": "bool",
-    "ipark_server_scan": "int(0, 300)",
     "rs485": {
       "retry_delay": "int(0, 300)",
       "retry_count": "int(0, 50)",
+      "ipark_server_enabled": "bool",
+      "ipark_server_scan": "int(0, 300)",
       "packet_log_enabled": "bool",
       "packet_log_time": "int(0, 300)"
     },
-    "energyPort": {
+    "energy_port": {
       "type": "list(serial|socket)",
       "ser_path": "str?",
       "address": "str?",
       "port": "int?"
     },
-    "controlPort": {
+    "control_port": {
       "type": "list(serial|socket)",
       "ser_path": "str?",
       "address": "str?",
       "port": "int?"
     },
-    "iparkServer": {
+    "ipark_server": {
       "address": "str",
       "username": "str",
       "password": "str"
     },
-    "iparkServerDevice": {
+    "ipark_server_device": {
       "living_light": "bool",
       "vehicle": "bool",
       "delivery": "bool",
@@ -101,7 +101,7 @@
       "topic_prefix": "str",
       "discovery_register": "bool"
     },
-    "fileName": {
+    "file_name": {
       "packet_log": "str?"
     }
   }
