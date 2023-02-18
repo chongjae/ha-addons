@@ -26,30 +26,30 @@
       "packet_log_enabled": false,
       "packet_log_time": 10
     },
-    "energy_port": {
+    "energy": {
       "type": "socket",
       "ser_path": "/dev/ttyUSB0",
       "address": "192.168.0.12",
       "port": 8899
     },
-    "control_port": {
+    "control": {
       "type": "socket",
       "ser_path": "/dev/ttyUSB0",
       "address": "192.168.0.18",
       "port": 8899
     },
-    "ipark_server": {
+    "ipark": {
       "address": "59.7.82.99",
       "username": "hm1066833",
       "password": "moon0427**"
     },
-    "ipark_server_device": {
+    "iparkDevice": {
       "living_light": true,
       "vehicle": true,
       "delivery": true,
       "energy": false
     },
-    "file_name": {
+    "fileName": {
       "packet_log": "/share/packet_log.txt"
     },
     "mqtt": {
@@ -70,24 +70,24 @@
       "packet_log_enabled": "bool",
       "packet_log_time": "int(0, 300)"
     },
-    "energy_port": {
+    "energy": {
       "type": "list(serial|socket)",
       "ser_path": "str?",
       "address": "str?",
       "port": "int?"
     },
-    "control_port": {
+    "control": {
       "type": "list(serial|socket)",
       "ser_path": "str?",
       "address": "str?",
       "port": "int?"
     },
-    "ipark_server": {
+    "ipark": {
       "address": "str",
       "username": "str",
       "password": "str"
     },
-    "ipark_server_device": {
+    "iparkDevice": {
       "living_light": "bool",
       "vehicle": "bool",
       "delivery": "bool",
@@ -101,7 +101,7 @@
       "topic_prefix": "str",
       "discovery_register": "bool"
     },
-    "file_name": {
+    "fileName": {
       "packet_log": "str?"
     }
   }
