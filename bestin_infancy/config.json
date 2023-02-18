@@ -43,15 +43,6 @@
       "username": "hm1066833",
       "password": "moon0427**"
     },
-    "iparkDevice": {
-      "living_light": true,
-      "vehicle": true,
-      "delivery": true,
-      "energy": false
-    },
-    "fileName": {
-      "packet_log": "/share/packet_log.txt"
-    },
     "mqtt": {
       "broker": "192.168.0.28",
       "username": "harwin",
@@ -87,12 +78,6 @@
       "username": "str",
       "password": "str"
     },
-    "iparkDevice": {
-      "living_light": "bool",
-      "vehicle": "bool",
-      "delivery": "bool",
-      "energy": "bool"
-    },
     "mqtt": {
       "broker": "str",
       "username": "str",
@@ -100,9 +85,6 @@
       "port": "int",
       "topic_prefix": "str",
       "discovery_register": "bool"
-    },
-    "fileName": {
-      "packet_log": "str?"
     }
   }
 }
