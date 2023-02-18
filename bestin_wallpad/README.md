@@ -100,7 +100,7 @@
 #### `username, password`
 * Mosquitto의 아이디와 비밀번호를 적어주세요.
 
-#### discovery_register (true / false)
+#### discovery_regist (true / false)
 * false로 변경하면 HA에 장치를 자동으로 등록하지 않습니다. 직접 yaml파일 구성이 필요합니다.
 
 #### prefix (기본값: bestin)
