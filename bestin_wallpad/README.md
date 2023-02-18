@@ -133,7 +133,7 @@
 * RS485 패킷 캡쳐 시간을 설정합니다. 기본값 30초 
 
 ### file_name:
-#### packet_log (기본값: ./cookie_info.json)
+#### packet_log (기본값: /share/packet_log.txt)
 * 파일 이름및 저장 경로를 설정합니다.
 
 ## 지원
