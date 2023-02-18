@@ -1,0 +1,73 @@
+sensor:
+  - platform: integration
+    source: sensor.bestin_energy_elec_current_usage
+    name: bestin_elec_integration
+    unit_prefix: 'k'
+    round: 3
+  - platform: integration
+    source: sensor.bestin_energy_heat_current_usage
+    method: left
+    name: bestin_heat_integration
+    round: 2
+  - platform: integration
+    source: sensor.bestin_energy_gas_current_usage
+    method: left
+    name: bestin_gas_integration
+    round: 2
+  - platform: integration
+    source: sensor.bestin_energy_water_current_usage
+    method: left
+    name: bestin_water_integration
+    round: 2
+  - platform: integration
+    source: sensor.bestin_energy_hotwater_current_usage
+    method: left
+    name: bestin_hotwater_integration
+    round: 2
+
+utility_meter:
+  bestin_elec_hourly:
+    source: sensor.bestin_elec_integration
+    cycle: hourly
+  bestin_water_hourly:
+    source: sensor.bestin_water_integration
+    cycle: hourly
+  bestin_gas_hourly:
+    source: sensor.bestin_gas_integration
+    cycle: hourly
+  bestin_heat_hourly:
+    source: sensor.bestin_heat_integration
+    cycle: hourly
+  bestin_hotwater_hourly:
+    source: sensor.bestin_hotwater_integration
+    cycle: hourly
+  bestin_elec_daily:
+    source: sensor.bestin_elec_integration
+    cycle: daily
+  bestin_water_daily:
+    source: sensor.bestin_water_integration
+    cycle: daily
+  bestin_gas_daily:
+    source: sensor.bestin_gas_integration
+    cycle: daily
+  bestin_heat_daily:
+    source: sensor.bestin_heat_integration
+    cycle: daily
+  bestin_hotwater_daily:
+    source: sensor.bestin_hotwater_integration
+    cycle: daily
+  bestin_elec_monthly:
+    source: sensor.bestin_elec_integration
+    cycle: monthly
+  bestin_water_monthly:
+    source: sensor.bestin_water_integration
+    cycle: monthly
+  bestin_gas_monthly:
+    source: sensor.bestin_gas_integration
+    cycle: monthly
+  bestin_heat_monthly:
+    source: sensor.bestin_heat_integration
+    cycle: monthly
+  bestin_hotwater_monthly:
+    source: sensor.bestin_hotwater_integration
+    cycle: monthly
