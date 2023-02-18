@@ -1,15 +1,25 @@
-#!/bin/sh
+#!/bin/bash
 
-SHARE_DIR=/share/bestin
+share_dir="/share/bestin"
 
-if [ ! -f $SHARE_DIR/bestin.js ]; then
-	mkdir $SHARE_DIR
-	mv /bestin.js $SHARE_DIR
+if [ ! -f "$share_dir/bestin.js" ]; then
+    if ! mkdir -p "$share_dir"; then
+        echo "ERROR: Failed to create directory $share_dir"
+        exit 1
+    fi
+
+    if ! mv /bestin.js "$share_dir"; then
+        echo "ERROR: Failed to move bestin.js to $share_dir"
+        exit 1
+    fi
 fi
 
-echo "INFO   Run bestin-v1 old version Addon .."
-cd $SHARE_DIR
-node $SHARE_DIR/bestin.js
+echo "INFO: Running bestin Addon..."
+cd "$share_dir"
+if ! node bestin.js; then
+    echo "ERROR: Failed to run bestin.js"
+    exit 1
+fi
 
-# for dev
-#while true; do echo "still live"; sleep 100; done
+# For dev
+# while true; do echo "still live"; sleep 100; done
