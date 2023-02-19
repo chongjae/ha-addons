@@ -33,7 +33,7 @@ const MSG_INFO = [
         setPropertyToMsg: (b, i, n, v) => {
             let id = (n.replace(/[^0-9]/g, "") - 1), val = (v == 'on' ? 0x80 : 0x00), on = (v == 'on' ? 0x04 : 0x00);
             b[5] = i & 0x0F;
-            if (n.includes('power')) b[6] = ((0x01 << id) | val), b[11] = on;
+            if (n.includes('power')) b[6] = (0x01 << id | val), b[11] = on;
             else if (n == 'batch') b[6] = (v == 'on' ? 0x8F : 0x0F), b[11] = on;
             return b;
         }
@@ -43,9 +43,9 @@ const MSG_INFO = [
     {
         device: 'outlet', header: 0x31, command: 0x01, length: 13, request: 'set',
         setPropertyToMsg: (b, i, n, v) => {
-            let id = (n.replace(/[^0-9]/g, "") - 1), val = (v == 'on' ? 0x80 : 0x00), on = (v == 'on' ? (0x09 << id) : 0x00);
+            let id = (n.replace(/[^0-9]/g, "") - 1), val = (v == 'on' ? 0x80 : 0x00), on = (v == 'on' ? 0x09 << id : 0x00);
             b[5] = i & 0x0F;
-            if (n.includes('power')) b[7] = ((0x01 << id) | val), b[11] = on;
+            if (n.includes('power')) b[7] = (0x01 << id | val), b[11] = on;
             else if (n == 'standby') b[8] = (v == 'on' ? 0x83 : 0x03);
             else if (n == 'batch') b[7] = (v == 'on' ? 0x8F : 0x0F), b[11] = on;
             return b;
@@ -97,7 +97,8 @@ const MSG_INFO = [
     {
         device: 'light', header: 0x31, command: 0x91, length: 30, request: 'ack',
         parseToProperty: (b) => {
-            var propArr = []; let m = (b[6].toString(16).slice(0, 1) == 'c' ? 4 : 3); let num = (b[5] & 0x0F) == 1 ? m : 2;
+            var propArr = []; let m = (b[6].toString(16).slice(0, 1) == 'c' ? 4 : 3); 
+            let num = (b[5] & 0x0F) == 1 ? m : 2;
             for (let i = 0; i < num; i++) {
                 propArr.push({
                     device: 'light', roomIdx: b[5] & 0x0F, propertyName: 'power' + (i + 1),
@@ -255,7 +256,6 @@ class CustomParser extends Transform {
 
 class rs485 {
     constructor() {
-        this._serverStartTime = new Date();
         this._receivedMsgs = [];
         this._deviceReady = false;
         this._syncTime = new Date();
