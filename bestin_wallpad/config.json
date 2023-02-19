@@ -61,7 +61,7 @@
     "server_scan": "int(0,300)",
     "rs485": {
       "retry_delay": "int(0,300)",
-      "retry_count": "int(0,50)",
+      "retry_count": "int(0,50)"
     },
     "energy_port": {
       "type": "list(serial|socket)",
