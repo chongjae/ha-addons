@@ -75,6 +75,7 @@
 
 ### server_enable:
 * 단지서버 연동 기능을 활성화/ 비활성화 합니다. true로 설정할 경우 "ipark_server"에 계정 정보 기입이 필요합니다.
+
 ### server_scan:
 * 단지서버 상태 조회 간격을 조절합니다. 기본값 5분 너무 빠르게 설정할 경우 서버에 지속적인 요청때문에 조작이 안되는 상황이 발생할수 있습니다.
   HA에서 거실 조명을 조작하면 상태는 바로 반영이 됩니다. 
@@ -127,16 +128,12 @@
 #### prefix (기본값: bestin)
 * MQTT topic의 시작 단어를 변경합니다. 기본값으로 두시면 됩니다.
   
-'''  
-#### packet_log_enabled (기본값: false)
-* RS485 패킷을 캡처할 수 있습니다. 
-#### packet_log_time (기본값: 30s)
+### packet_log:
+#### log_time (기본값: 30s)
 * RS485 패킷 캡쳐 시간을 설정합니다. 기본값 30초 
 
-### file_name:
-#### packet_log (기본값: /share/packet_log.txt)
+#### file_name (기본값: /share/packet_log.txt)
 * 파일 이름및 저장 경로를 설정합니다.
-'''
 
 ## 지원
 [HomeAssistant 네이버 카페 (질문, 수정 제안 등)](https://cafe.naver.com/koreassistant)
