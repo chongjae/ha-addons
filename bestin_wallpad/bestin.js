@@ -265,15 +265,13 @@ class rs485 {
         this._deviceStatusCache = {};
         this._deviceStatus = [];
         this._timestamp = undefined;
+        this._discovery = false;
+        this._cookieInfo = {};
 
         this._mqttClient = this.mqttClient();
-        this._discoveryRegist = false;
-        this._socketWriteEnergy = this.createSocketConnection(CONFIG.energy_port, 'energy');
-        this._socketWriteControl = this.createSocketConnection(CONFIG.control_port, 'control');
-        if (CONFIG.rs485.ipark_server_enabled) {
-            this._iparkServerInfo = this.IparkLoginRequest();
-            this._cookieInfo = {};
-        }
+        this._connEnergy = this.createConnection(CONFIG.energy_port, 'energy');
+        this._connControl = this.createConnection(CONFIG.control_port, 'control');
+        this.IparkServerEnable(CONFIG.server_enable);
     }
 
     mqttClient() {
@@ -319,8 +317,7 @@ class rs485 {
         }
         const topics = topic.split("/");
         const value = message.toString();
-        const prefix = CONFIG.mqtt.topic_prefix;
-        if (topics[0] !== prefix) {
+        if (topics[0] !== CONFIG.mqtt.prefix) {
             return;
         }
 
@@ -337,7 +334,7 @@ class rs485 {
         if (!this._deviceReady) {
             return;
         }
-        const prefix = CONFIG.mqtt.topic_prefix;
+        const prefix = CONFIG.mqtt.prefix;
         const topic = `${prefix}/${device}/${roomIdx}/${propertyName}/state`;
 
         if (!(propertyName.includes(["usage"]) || propertyName == "current")) {
@@ -346,14 +343,15 @@ class rs485 {
         this._mqttClient.publish(topic, String(propertyValue), { retain: true });
     }
 
-    mqttRegistDiscover(device, roomIdx, Idx) {
+    mqttDiscovery(device, roomIdx, Idx) {
+        const prefix = CONFIG.mqtt.prefix;
         switch (device) {
             case 'light':
                 var topic = `homeassistant/light/bestin_wallpad/light_${roomIdx}_${Idx}/config`;
                 var payload = {
                     name: `bestin_light_${roomIdx}_${Idx}`,
-                    cmd_t: `bestin/light/${roomIdx}/${Idx}/command`,
-                    stat_t: `bestin/light/${roomIdx}/${Idx}/state`,
+                    cmd_t: `${prefix}/light/${roomIdx}/${Idx}/command`,
+                    stat_t: `${prefix}/light/${roomIdx}/${Idx}/state`,
                     uniq_id: `bestin_light_${roomIdx}_${Idx}`,
                     pl_on: "on",
                     pl_off: "off",
@@ -371,8 +369,8 @@ class rs485 {
                 var topic = `homeassistant/${component}/bestin_wallpad/outlet_${roomIdx}_${Idx}/config`;
                 var payload = {
                     name: `bestin_outlet_${roomIdx}_${Idx}`,
-                    cmd_t: `bestin/outlet/${roomIdx}/${Idx}/command`,
-                    stat_t: `bestin/outlet/${roomIdx}/${Idx}/state`,
+                    cmd_t: `${prefix}/outlet/${roomIdx}/${Idx}/command`,
+                    stat_t: `${prefix}/outlet/${roomIdx}/${Idx}/state`,
                     uniq_id: `bestin_outlet_${roomIdx}_${Idx}`,
                     pl_on: "on",
                     pl_off: "off",
@@ -391,11 +389,11 @@ class rs485 {
                 var topic = `homeassistant/climate/bestin_wallpad/thermostat_${roomIdx}/config`;
                 var payload = {
                     name: `bestin_thermostat_${roomIdx}`,
-                    mode_cmd_t: `bestin/thermostat/${roomIdx}/mode/command`,
-                    mode_stat_t: `bestin/thermostat/${roomIdx}/mode/state`,
-                    temp_cmd_t: `bestin/thermostat/${roomIdx}/setting/command`,
-                    temp_stat_t: `bestin/thermostat/${roomIdx}/setting/state`,
-                    curr_temp_t: `bestin/thermostat/${roomIdx}/current/state`,
+                    mode_cmd_t: `${prefix}/thermostat/${roomIdx}/mode/command`,
+                    mode_stat_t: `${prefix}/thermostat/${roomIdx}/mode/state`,
+                    temp_cmd_t: `${prefix}/thermostat/${roomIdx}/setting/command`,
+                    temp_stat_t: `${prefix}/thermostat/${roomIdx}/setting/state`,
+                    curr_temp_t: `${prefix}/thermostat/${roomIdx}/current/state`,
                     uniq_id: `bestin_thermostat_${roomIdx}`,
                     modes: ["off", "heat"],
                     min_temp: 5,
@@ -414,10 +412,10 @@ class rs485 {
                 var topic = `homeassistant/fan/bestin_wallpad/ventil_${roomIdx}/config`;
                 var payload = {
                     name: `bestin_ventil_${roomIdx}`,
-                    cmd_t: `bestin/ventil/${roomIdx}/power/command`,
-                    stat_t: `bestin/ventil/${roomIdx}/power/state`,
-                    pr_mode_cmd_t: `bestin/ventil/${roomIdx}/preset/command`,
-                    pr_mode_stat_t: `bestin/ventil/${roomIdx}/preset/state`,
+                    cmd_t: `${prefix}/ventil/${roomIdx}/power/command`,
+                    stat_t: `${prefix}/ventil/${roomIdx}/power/state`,
+                    pr_mode_cmd_t: `${prefix}/ventil/${roomIdx}/preset/command`,
+                    pr_mode_stat_t: `${prefix}/ventil/${roomIdx}/preset/state`,
                     pr_modes: ["01", "02", "03"],
                     uniq_id: `bestin_vnetil_${roomIdx}`,
                     pl_on: "on",
@@ -435,8 +433,8 @@ class rs485 {
                 var topic = `homeassistant/switch/bestin_wallpad/gas_valve_${roomIdx}/config`;
                 var payload = {
                     name: `bestin_gas_valve_${roomIdx}`,
-                    cmd_t: `bestin/gas/${roomIdx}/power/command`,
-                    stat_t: `bestin/gas/${roomIdx}/power/state`,
+                    cmd_t: `${prefix}/gas/${roomIdx}/power/command`,
+                    stat_t: `${prefix}/gas/${roomIdx}/power/state`,
                     uniq_id: `bestin_gas_valve_${roomIdx}`,
                     pl_on: "on",
                     pl_off: "off",
@@ -454,7 +452,7 @@ class rs485 {
                 var topic = `homeassistant/sensor/bestin_wallpad/energy_${roomIdx}_${Idx}/config`;
                 var payload = {
                     name: `bestin_energy_${roomIdx}_${Idx}_usage`,
-                    stat_t: `bestin/energy/${roomIdx}/${Idx}/state`,
+                    stat_t: `${prefix}/energy/${roomIdx}/${Idx}/state`,
                     unit_of_meas: roomIdx == "elec" ? "kWh" : "m³",
                     uniq_id: `bestin_energy_${roomIdx}_${Idx}_usage`,
                     device: {
@@ -470,7 +468,7 @@ class rs485 {
                 var topic = `homeassistant/sensor/bestin_wallpad/vehicle_${roomIdx}/config`;
                 var payload = {
                     name: `bestin_vehicle_${roomIdx}`,
-                    stat_t: `bestin/vehicle/${roomIdx}/info/state`,
+                    stat_t: `${prefix}/vehicle/${roomIdx}/info/state`,
                     uniq_id: `bestin_vehicle_${roomIdx}`,
                     ic: "mdi:car",
                     device: {
@@ -486,7 +484,7 @@ class rs485 {
                 var topic = `homeassistant/sensor/bestin_wallpad/delivery_${roomIdx}/config`;
                 var payload = {
                     name: `bestin_delivery_${roomIdx}`,
-                    stat_t: `bestin/delivery/${roomIdx}/info/state`,
+                    stat_t: `${prefix}/delivery/${roomIdx}/info/state`,
                     uniq_id: `bestin_delivery_${roomIdx}`,
                     ic: "mdi:archive-check",
                     device: {
@@ -524,7 +522,7 @@ class rs485 {
         return result;
     }
 
-    createSocketConnection(options, name) {
+    createConnection(options, name) {
         let connection;
         if (options.type === 'serial') {
             connection = new SerialPort({
@@ -636,20 +634,20 @@ class rs485 {
         }
         serialCmd = this._serialCmdQueue.shift();
 
-        const socketWrite = {
-            light: this._socketWriteEnergy,
-            outlet: this._socketWriteEnergy,
-            ventil: this._socketWriteControl,
-            gas: this._socketWriteControl,
-            thermostat: this._socketWriteControl
+        const writeHandle = {
+            light: this._connEnergy,
+            outlet: this._connEnergy,
+            ventil: this._connControl,
+            gas: this._connControl,
+            thermostat: this._connControl
         }[serialCmd.device];
 
-        if (!socketWrite) {
+        if (!writeHandle) {
             error(`Invalid device: ${serialCmd.device}`);
             return;
         }
 
-        socketWrite.write(serialCmd.cmdHex, (err) => {
+        writeHandle.write(serialCmd.cmdHex, (err) => {
             if (err) {
                 error('Send Error:', err.message);
             }
@@ -723,16 +721,24 @@ class rs485 {
         this.mqttClientUpdate(device, roomIdx, propertyName, propertyValue);
 
         let registCover = setImmediate(() => {
-            if (this._discoveryRegist === false) {
-                if (CONFIG.mqtt.discovery_regist) { this.mqttRegistDiscover(device, roomIdx, propertyName) };
+            if (this._discovery === false) {
+                if (CONFIG.mqtt.discovery) this.mqttDiscovery(device, roomIdx, propertyName);
             } else {
                 return true;
             }
         });
         setTimeout(() => {
             clearImmediate(registCover);
-            this._discoveryRegist = true;
+            this._discovery = true;
         }, 10000);
+    }
+
+    IparkServerEnable(bool) {
+        if (bool) {
+            this.IparkLoginRequest();
+        } else {
+            log('I-PARK server disabled');
+        }
     }
 
     IparkLoginRequest() {
