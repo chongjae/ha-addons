@@ -88,9 +88,9 @@
     },
     "mqtt": {
       "broker": "str",
+      "port": "int",
       "username": "str?",
       "password": "str?",
-      "port": "int",
       "prefix": "str",
       "discovery": "bool"
     }
