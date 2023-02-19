@@ -253,7 +253,7 @@ class CustomParser extends Transform {
     }
 }
 
-class _HOMERS485 {
+class rs485 {
     constructor() {
         this._serverStartTime = new Date();
         this._receivedMsgs = [];
@@ -1072,4 +1072,5 @@ class _HOMERS485 {
     }
 
 };
-_HOMERS485 = new _HOMERS485();
+
+_rs485 = new rs485();
