@@ -23,7 +23,7 @@ const CONFIG = require('/data/options.json');
 // 로그 표시 
 const log = (...args) => console.log('[' + (new Date()).toLocaleString() + ']', 'INFO     ', args.join(' '));
 const warn = (...args) => console.log('[' + (new Date()).toLocaleString() + ']', 'WARNING  ', args.join(' '));
-const error = (...args) => console.error('[' + (new Date()).toLocaleString() + ']', 'ERROR    ', args.join(' '));
+const error = (...args) => console.log('[' + (new Date()).toLocaleString() + ']', 'ERROR    ', args.join(' '));
 
 const MSG_INFO = [
     /////////////////////////////////////////////////////////////////////////////
