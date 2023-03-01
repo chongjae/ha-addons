@@ -1,692 +1,638 @@
-/**
- * RS485 Homegateway for Bestin Homenet
- * @소스 공개 : Daehwan, Kang
- * @베스틴 홈넷용으로 수정 : harwin
- * @수정일 2022-12-14
+/** 
+ * @fileoverview bestin_infancy.js
+ * @description bestin_infancy.js
+ * @version 1.2.0
+ * @license MIT
+ * @author harwin1
+ * @date 2023-03-01
+ * @lastUpdate 2023-03-01
  */
 
-const util = require('util');
 const net = require('net');
 const SerialPort = require('serialport').SerialPort;
 const mqtt = require('mqtt');
 
 // 커스텀 파서
 const Transform = require('stream').Transform;
+const CONFIG = require('/data/options.json');
 
-const CONFIG = require('/data/options.json');  //**** 애드온의 옵션을 불러옵니다. 이후 CONFIG.mqtt.username 과 같이 사용가능합니다. 
+// 로그 표시 
+const log = (...args) => console.log('[' + (new Date()).toLocaleString() + ']', 'INFO     ', args.join(' '));
+const warn = (...args) => console.log('[' + (new Date()).toLocaleString() + ']', 'WARNING  ', args.join(' '));
+const error = (...args) => console.log('[' + (new Date()).toLocaleString() + ']', 'ERROR    ', args.join(' '));
 
-// 각 디바이스 설정
-const portVar = {
-    type: CONFIG.rs485.type,
-    serName: CONFIG.rs485.serName,
-    addr: CONFIG.rs485.address,
-    port: CONFIG.rs485.port
-};
-const smart1Var = {
-    type: CONFIG.smart1.type,
-    serName: CONFIG.smart1.serName,
-    addr: CONFIG.smart1.address,
-    port: CONFIG.smart1.port
-};
-const smart2Var = {
-    type: CONFIG.smart2.type,
-    serName: CONFIG.smart2.serName,
-    addr: CONFIG.smart2.address,
-    port: CONFIG.smart2.port
-};
+const MSG_INFO = [
+    /////////////////////////////////////////////////////////////////////////////
+    //command <-> response
+    {                    
+        device: 'light', header: 0x50, command: 0x12, length: 10, request: 'set',
+        setPropertyToMsg: (b, r, n, v) => {
+            let id = n.replace(/[^0-9]/g, "");
+            b[1] = b[1] + r;
+            b[5] = (v == 'on' ? 0x01 : 0x00);
+            b[6] = id & 0x0F;
+            return b;
+        }
+    },
 
-// MQTT 설정
-const mqttVar = {
-    broker: CONFIG.mqtt.broker,
-    port: CONFIG.mqtt.port,
-    username: CONFIG.mqtt.username,
-    password: CONFIG.mqtt.password,
-    clientId: 'bestin_ipark',
-    topic_prefix: CONFIG.mqtt.prefix,
-    state_topic: CONFIG.mqtt.prefix + '/%s%s/%s/state',
-    device_topic: CONFIG.mqtt.prefix + '/+/+/command'
-};
+    {
+        device: 'outlet', header: 0x50, command: 0x12, length: 13, request: 'set',
+        setPropertyToMsg: (b, r, n, v) => {
+            let id = n.replace(/[^0-9]/g, "");
+            b[1] = b[1] + r;
+            b[8] = 0x01;
+            b[9] = id & 0x0F;
+            b[10] = (v == 'on' ? 0x01 : 0x02);
+            return b;
+        }
+    },
 
-const CONST = {
-    // 포트이름 설정
-    portName: process.platform.startsWith('win') ? portVar.serName : portVar.serName,
-    portRECV: process.platform.startsWith('win') ? smart1Var.serName : smart1Var.serName,
-    portSEND: process.platform.startsWith('win') ? smart2Var.serName : smart2Var.serName,
-    // SerialPort Delay(ms)
-    SEND_DELAY: 100,
-    MAX_RETRY: 30,
-    // MQTT 수신 Delay(ms)
-    MQTT_DELAY: 5000,
-    // 메시지 Prefix 상수
-    MSG_PREFIX: [0x02],
-    MSG_HEADER: [0x51, 0x52, 0x53, 0x54, 0x28, 0x31, 0x61, 0xC1],
-    // 디바이스 Hex코드
-    DEVICE_STATE: [
-        { deviceId: 'Room', subId: '' },
-        { deviceId: 'Gas', subId: '' },
-        { deviceId: 'Doorlock', subId: '' },
-        { deviceId: 'Fan', subId: '' },
-        { deviceId: 'Thermo', subId: '' },
-        { deviceId: 'Elevator', subId: '' }],
+    {
+        device: 'thermostat', header: 0x28, command: 0x12, length: 14, request: 'set',
+        setPropertyToMsg: (b, r, n, v) => {
+            b[5] = r & 0x0F, b[6] = (v == 'heat' ? 0x01 : 0x02);
+            return b;
+        }
+    },
 
-    DEVICE_COMMAND: [
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(10, '02510A12A801010000E9', 'hex'), light1: 'ON' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(10, '02510A12AD00010000E7', 'hex'), light1: 'OFF' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(10, '02510A12AF01020000E9', 'hex'), light2: 'ON' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(10, '02510A12B40002000001', 'hex'), light2: 'OFF' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(10, '02510A12B701040000FB', 'hex'), light3: 'ON' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(10, '02510A12BE00040000F9', 'hex'), light3: 'OFF' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(10, '02510A12C1010800009D', 'hex'), light4: 'ON' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(10, '02510A12C60008000085', 'hex'), light4: 'OFF' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(10, '02510A12CB011000009B', 'hex'), light5: 'ON' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(10, '02510A12D100100000B4', 'hex'), light5: 'OFF' },//방1
-        { deviceId: 'Room', subId: '2', commandHex: Buffer.alloc(10, '02520A12DC010100009A', 'hex'), light1: 'ON' },
-        { deviceId: 'Room', subId: '2', commandHex: Buffer.alloc(10, '02520A12E100010000B4', 'hex'), light1: 'OFF' },
-        { deviceId: 'Room', subId: '2', commandHex: Buffer.alloc(10, '02520A12E401020000AF', 'hex'), light2: 'ON' },
-        { deviceId: 'Room', subId: '2', commandHex: Buffer.alloc(10, '02520A12EA00020000A8', 'hex'), light2: 'OFF' },
-        { deviceId: 'Room', subId: '2', commandHex: Buffer.alloc(10, '02520A12ED01040000AA', 'hex'), light3: 'ON' },
-        { deviceId: 'Room', subId: '2', commandHex: Buffer.alloc(10, '02520A12F200040000BE', 'hex'), light3: 'OFF' },//방2
-        { deviceId: 'Room', subId: '3', commandHex: Buffer.alloc(10, '02530A125A0101000019', 'hex'), light1: 'ON' },
-        { deviceId: 'Room', subId: '3', commandHex: Buffer.alloc(10, '02530A12620001000034', 'hex'), light1: 'OFF' },
-        { deviceId: 'Room', subId: '3', commandHex: Buffer.alloc(10, '02530A1266010200002C', 'hex'), light2: 'ON' },
-        { deviceId: 'Room', subId: '3', commandHex: Buffer.alloc(10, '02530A126D0002000024', 'hex'), light2: 'OFF' },  //방3
-        { deviceId: 'Room', subId: '4', commandHex: Buffer.alloc(10, '02540A12CC0101000088', 'hex'), light1: 'ON' },
-        { deviceId: 'Room', subId: '4', commandHex: Buffer.alloc(10, '02540A12D100010000A2', 'hex'), light1: 'OFF' },  //방4
+    {
+        device: 'thermostat', header: 0x28, command: 0x12, length: 14, request: 'set',
+        setPropertyToMsg: (b, r, n, v) => {
+            b[5] = r & 0x0F, val = parseFloat(v), vInt = parseInt(val), vFloat = val - vInt;
+            b[7] = ((vInt & 0xFF) | ((vFloat != 0) ? 0x40 : 0x00));
+            return b;
+        }
+    },
 
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(10, '', 'hex'), outlet1: 'ON' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(10, '', 'hex'), outlet1: 'OFF' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(10, '', 'hex'), outlet2: 'ON' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(10, '', 'hex'), outlet2: 'OFF' },  //방1
-        { deviceId: 'Room', subId: '2', commandHex: Buffer.alloc(12, '02520C122D0000000101016A', 'hex'), outlet1: 'ON' },
-        { deviceId: 'Room', subId: '2', commandHex: Buffer.alloc(12, '02520C12280000000101026C', 'hex'), outlet1: 'OFF' },
-        { deviceId: 'Room', subId: '2', commandHex: Buffer.alloc(12, '02520C12380000000102017E', 'hex'), outlet2: 'ON' },
-        { deviceId: 'Room', subId: '2', commandHex: Buffer.alloc(12, '02520C123300000001020286', 'hex'), outlet2: 'OFF' },  //방2
-        { deviceId: 'Room', subId: '3', commandHex: Buffer.alloc(12, '02530C124E0000000101010A', 'hex'), outlet1: 'ON' },
-        { deviceId: 'Room', subId: '3', commandHex: Buffer.alloc(12, '02530C12490000000101020A', 'hex'), outlet1: 'OFF' },
-        { deviceId: 'Room', subId: '3', commandHex: Buffer.alloc(12, '02530C125700000001020122', 'hex'), outlet2: 'ON' },
-        { deviceId: 'Room', subId: '3', commandHex: Buffer.alloc(12, '02530C125200000001020224', 'hex'), outlet2: 'OFF' },  //방3
-        { deviceId: 'Room', subId: '4', commandHex: Buffer.alloc(12, '02540C12660000000101012D', 'hex'), outlet1: 'ON' },
-        { deviceId: 'Room', subId: '4', commandHex: Buffer.alloc(12, '02540C126100000001010235', 'hex'), outlet1: 'OFF' },
-        { deviceId: 'Room', subId: '4', commandHex: Buffer.alloc(12, '02540C126F00000001020125', 'hex'), outlet2: 'ON' },
-        { deviceId: 'Room', subId: '4', commandHex: Buffer.alloc(12, '02540C126A0000000102022F', 'hex'), outlet2: 'OFF' },  //방4
+    {
+        device: 'ventil', header: 0x61, command: '', length: 10, request: 'set',
+        setPropertyToMsg: (b, r, n, v) => {
+            if (n == 'power') b[2] = 0x01, b[5] = (v == 'on' ? 0x01 : 0x00), b[6] = 0x01;
+            else if (n == 'preset') b[2] = 0x03, b[6] = Number(v);
+            return b;
+        }
+    },
 
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(12, '02510C12190000000101104A', 'hex'), idlePower1: 'ON' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(12, '02510C121F00000001012078', 'hex'), idlePower1: 'OFF' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(12, '02510C12240000000102107E', 'hex'), idlePower2: 'ON' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(12, '02510C12290000000102204D', 'hex'), idlePower2: 'OFF' },
-        { deviceId: 'Room', subId: '2', commandHex: Buffer.alloc(12, '02520C12B000000001011012', 'hex'), idlePower1: 'ON' },
-        { deviceId: 'Room', subId: '2', commandHex: Buffer.alloc(12, '02520C12BC000000010120D6', 'hex'), idlePower1: 'OFF' },
-        { deviceId: 'Room', subId: '2', commandHex: Buffer.alloc(12, '02520C12C700000001021084', 'hex'), idlePower2: 'ON' },
-        { deviceId: 'Room', subId: '2', commandHex: Buffer.alloc(12, '02520C12CE000000010220A7', 'hex'), idlePower2: 'OFF' },
-        { deviceId: 'Room', subId: '3', commandHex: Buffer.alloc(12, '02530C122400000001011063', 'hex'), idlePower1: 'ON' },
-        { deviceId: 'Room', subId: '3', commandHex: Buffer.alloc(12, '02530C122C0000000101204B', 'hex'), idlePower1: 'OFF' },
-        { deviceId: 'Room', subId: '3', commandHex: Buffer.alloc(12, '02530C123200000001021092', 'hex'), idlePower2: 'ON' },
-        { deviceId: 'Room', subId: '3', commandHex: Buffer.alloc(12, '02530C123A0000000102205A', 'hex'), idlePower2: 'OFF' },
-        { deviceId: 'Room', subId: '4', commandHex: Buffer.alloc(12, '02540C126F00000001011039', 'hex'), idlePower1: 'ON' },
-        { deviceId: 'Room', subId: '4', commandHex: Buffer.alloc(12, '02540C12760000000101201E', 'hex'), idlePower1: 'OFF' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(12, '02540C127D0000000102102C', 'hex'), idlePower2: 'ON' },
-        { deviceId: 'Room', subId: '1', commandHex: Buffer.alloc(12, '02540C1284000000010220EF', 'hex'), idlePower2: 'OFF' },
+    {
+        device: 'gas', header: 0x31, command: 0x02, length: 10, request: 'set',
+        setPropertyToMsg: (b, r, n, v) => {
+            return b;
+        }
+    },
 
-        { deviceId: 'Fan', subId: '', commandHex: Buffer.alloc(10, '0261010000010100006E', 'hex'), power: 'ON' }, //켜짐
-        { deviceId: 'Fan', subId: '', commandHex: Buffer.alloc(10, '0261010000000100006B', 'hex'), power: 'OFF' }, //꺼짐
-        { deviceId: 'Fan', subId: '', commandHex: Buffer.alloc(10, '0261030000000100006D', 'hex'), preset: 'low' }, //약(켜짐)
-        { deviceId: 'Fan', subId: '', commandHex: Buffer.alloc(10, '0261030000000200006C', 'hex'), preset: 'mid' }, //중(켜짐)
-        { deviceId: 'Fan', subId: '', commandHex: Buffer.alloc(10, '0261030000000300006B', 'hex'), preset: 'high' }, //강(켜짐)
-        { deviceId: 'Fan', subId: '', commandHex: Buffer.alloc(10, '0261070000100000007A', 'hex'), preset: 'nature OFF' }, //자연환기(꺼짐)
-        { deviceId: 'Fan', subId: '', commandHex: Buffer.alloc(10, '0261070000000000006A', 'hex'), preset: 'nature ON' }, //자연환기(켜짐)
+    /////////////////////////////////////////////////////////////////////////////
+    //query <-> response
+    {
+        device: 'light', header: 0x50, command: 0x91, length: 20, request: 'ack',
+        parseToProperty: (b) => {
+            var propArr = []; let roomId = b[1].toString(16).substr(1);
+            let num = roomId == 1 ? 5 : 2
+            for (let i = 0; i < num; i++) {
+                propArr.push({
+                    device: 'light', roomIdx: roomId, propertyName: 'power' + (i + 1),
+                    propertyValue: ((b[6] & (1 << i)) ? 'on' : 'off'),
+                });
+            }
+            return propArr;
+        }
+    },
 
-        { deviceId: 'Thermo', subId: '1', commandHex: Buffer.alloc(14, '02280E1200010100000000000040', 'hex'), power: 'heat' }, // 온도조절기1-ON
-        { deviceId: 'Thermo', subId: '1', commandHex: Buffer.alloc(14, '02280E1200010200000000000041', 'hex'), power: 'off' }, // 온도조절기1-OFF
-        { deviceId: 'Thermo', subId: '2', commandHex: Buffer.alloc(14, '02280E120002010000000000003B', 'hex'), power: 'heat' },
-        { deviceId: 'Thermo', subId: '2', commandHex: Buffer.alloc(14, '02280E120002020000000000003E', 'hex'), power: 'off' },
-        { deviceId: 'Thermo', subId: '3', commandHex: Buffer.alloc(14, '02280E120003010000000000003E', 'hex'), power: 'heat' },
-        { deviceId: 'Thermo', subId: '3', commandHex: Buffer.alloc(14, '02280E120003020000000000003B', 'hex'), power: 'off' },
-        { deviceId: 'Thermo', subId: '4', commandHex: Buffer.alloc(14, '02280E1200040100000000000039', 'hex'), power: 'heat' },
-        { deviceId: 'Thermo', subId: '4', commandHex: Buffer.alloc(14, '02280E1200040200000000000038', 'hex'), power: 'off' },
-        { deviceId: 'Thermo', subId: '5', commandHex: Buffer.alloc(14, '02280E120005010000000000003C', 'hex'), power: 'heat' },
-        { deviceId: 'Thermo', subId: '5', commandHex: Buffer.alloc(14, '02280E120005020000000000003D', 'hex'), power: 'off' },
-        { deviceId: 'Thermo', subId: '1', commandHex: Buffer.alloc(14, '02280E12FF0100FF0000000000FF', 'hex'), setTemp: '' }, // 온도조절기1-온도설정
-        { deviceId: 'Thermo', subId: '2', commandHex: Buffer.alloc(14, '02280E12FF0200FF0000000000FF', 'hex'), setTemp: '' },
-        { deviceId: 'Thermo', subId: '3', commandHex: Buffer.alloc(14, '02280E12FF0300FF0000000000FF', 'hex'), setTemp: '' },
-        { deviceId: 'Thermo', subId: '4', commandHex: Buffer.alloc(14, '02280E12FF0400FF0000000000FF', 'hex'), setTemp: '' },
-        { deviceId: 'Thermo', subId: '5', commandHex: Buffer.alloc(14, '02280E12FF0500FF0000000000FF', 'hex'), setTemp: '' },
+    {
+        device: 'outlet', header: 0x50, command: 0x91, length: 20, request: 'ack',
+        parseToProperty: (b) => {
+            var propArr = []; let roomId = b[1].toString(16).substr(1);
+            for (let i = 0; i < 2; i++) {
+                consumption = b.length > (i1 = 10 + 5 * i) + 2 ? parseInt(b.slice(i1, i1 + 2).toString('hex'), 16) / 10 : 0;
+                propArr.push({
+                    device: 'outlet', roomIdx: roomId, propertyName: 'power' + (i + 1),
+                    propertyValue: ((b[9] & (1 << i)) ? 'on' : 'off'),
+                }, {
+                    device: 'outlet', roomIdx: roomId, propertyName: 'usage' + (i + 1),
+                    propertyValue: consumption,
+                });
+            }
+            return propArr;
+        }
+    },
 
-        { deviceId: 'Gas', subId: '', commandHex: Buffer.alloc(10, '0231020000000000003D', 'hex'), power: 'OFF' },
-        { deviceId: 'Doorlock', subId: '', commandHex: Buffer.alloc(10, '0241020001000000004E', 'hex'), power: 'ON' },
-        { deviceId: 'Elevator', subId: '', commandHex: Buffer.alloc(12), power: 'ON' }],
-    
-    // 상태 Topic (/homenet/${deviceId}${subId}/${property}/state/ = ${value})
-    // 명령어 Topic (/homenet/${deviceId}${subId}/${property}/command/ = ${value})
-    TOPIC_PRFIX: mqttVar.topic_prefix,
-    STATE_TOPIC: mqttVar.state_topic,  //상태 전달
-    DEVICE_TOPIC: mqttVar.device_topic //명령 수신
-};
+    {
+        device: 'thermostat', header: 0x28, command: 0x91, length: 16, request: 'ack',
+        parseToProperty: (b) => {
+            let roomId = b[5] & 0x0F;
+            return [
+                { device: 'thermostat', roomIdx: roomId, propertyName: 'mode', propertyValue: (b[6] & 0x01) ? 'heat' : 'off' },
+                { device: 'thermostat', roomIdx: roomId, propertyName: 'setting', propertyValue: (b[7] & 0x3F) + ((b[7] & 0x40) > 0) * 0.5 },
+                { device: 'thermostat', roomIdx: roomId, propertyName: 'current', propertyValue: (b[8] << 8) + b[9] / 10.0 },
+            ];
+        }
+    },
 
-// 베스틴 홈넷용 시리얼 통신 파서 : 메시지 길이나 구분자가 불규칙하여 별도 파서 정의
-class CustomParser {
+    {
+        device: 'ventil', header: 0x61, command: 0x80, length: 10, request: 'ack',
+        parseToProperty: (b) => {
+            return [
+                { device: 'ventil', roomIdx: 1, propertyName: 'power', propertyValue: (b[5] ? 'on' : 'off') },
+                { device: 'ventil', roomIdx: 1, propertyName: 'preset', propertyValue: b[6].toString().padStart(2, '0') },
+            ];
+        }
+    },
+
+    {
+        device: 'gas', header: 0x31, command: 0x80, length: 10, request: 'ack',
+        parseToProperty: (b) => {
+            return [{ device: 'gas', roomIdx: 1, propertyName: 'power', propertyValue: (b[5] ? 'on' : 'off') }];
+        }
+    },
+
+];
+
+class CustomParser extends Transform {
     constructor(options) {
-        util.inherits(CustomParser, Transform);
-        Transform.call(this, options);
-        this._queueChunk = [];
-        this._msgLenCount = 0;
-        this._msgLength = 0;
-        this._msgTypeFlag = false;
-        //this._wallpadType = CONST.WALLPAD_TYPE;
+        super(options);
+        this.reset();
     }
+
+    reset() {
+        this._queueChunk = [];
+        this._lenCount = 0;
+        this._length = undefined;
+        this._typeFlag = false;
+        this._prefix = 0x02;
+        this._headers = [0x51, 0x52, 0x53, 0x54, 0x17, 0x31, 0x28, 0x61];
+    }
+
     _transform(chunk, encoding, done) {
-        var start = 0;
-        for (var i = 0; i < chunk.length; i++) {
-            if (CONST.MSG_PREFIX.includes(chunk[i]) && CONST.MSG_HEADER.includes(chunk[i + 1])) {
-                this._queueChunk.push(chunk.slice(start, i));
+        let start = 0;
+        for (let i = 0; i < chunk.length; i++) {
+            if (this._prefix === chunk[i] && this._headers.includes(chunk[i + 1])) {
                 this.push(Buffer.concat(this._queueChunk));
                 this._queueChunk = [];
-                this._msgLenCount = 0;
                 start = i;
-                this._msgTypeFlag = true;
+                this._typeFlag = true;
+            } else if (this._typeFlag) {
+                const expectedLength = this.expectedLength(chunk, i);
+                //console.log(expectedLength);
+                if (expectedLength) {
+                    this._length = expectedLength;
+                    this._typeFlag = false;
+                } else {
+                    this.reset();
+                    return done();
+                }
             }
 
-            else if (this._msgTypeFlag) {
-                let length;
-                switch (chunk[i + 2]) {
-                    case 0x06:
-                        length = 6; break;
-                    case 0x07:
-                        length = 7; break;
-                    case 0x0a:
-                        length = 10; break;
-                    case 0x0c:
-                        length = 12; break;
-                    case 0x14:
-                        length = 20; break;
-                    case 0x00: case 0x80:
-                        length = 10; break;
-                    case 0x10:
-                        length = 16; break;
-                    case 0x15:
-                        length = 21; break;
-                    default:
-                        length = 0;
-                }
-                this._msgLength = length;
-                this._msgTypeFlag = false;
-            }
-            if (this._msgLenCount == this._msgLength - 1) { // 전체 메시지를 읽었을 경우
-                this._queueChunk.push(chunk.slice(start, i + 1)); // 구분자 앞부분을 큐에 저장하고
-                this.push(Buffer.concat(this._queueChunk)); // 큐에 저장된 메시지들 합쳐서 내보냄
-                this._queueChunk = []; // 큐 초기화
-                this._msgLenCount = 0;
+            if (this._lenCount === this._length - 1) {
+                this._queueChunk.push(chunk.slice(start, i + 1));
+                this.push(Buffer.concat(this._queueChunk));
+                this._queueChunk = [];
                 start = i + 1;
             } else {
-                this._msgLenCount++;
+                this._lenCount++;
             }
         }
         this._queueChunk.push(chunk.slice(start));
         done();
     }
+
+    _flush(done) {
+        this.push(Buffer.concat(this._queueChunk));
+        this.reset();
+        done();
+    }
+
+    expectedLength(packet, index) {
+        const secondByte = packet[index];
+        const thirdByte = packet[index + 1];
+
+        if ([0x31, 0x61, 0x17].includes(secondByte)) {
+            return 10;
+        } else {
+            return thirdByte;
+        }
+    }
 }
 
-// 로그 표시 
-var log = (...args) => console.log('[' + new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) + ']', args.join(' '));
 
-// 홈컨트롤 상태
-var homeStatus = {};
-var lastReceive = new Date().getTime();  
-var mqttReady = false;
-var queue = new Array();
-var retryCnt = 0;  // 수정금지
-var packet1 = {};  
-var packet2 = {};  //smart
+class rs485 {
+    constructor() {
+        this._receivedMsgs = [];
+        this._deviceReady = false;
+        this._lastReceive = new Date();
+        this._commandQueue = new Array();
+        this._serialCmdQueue = new Array();
+        this._deviceStatusCache = {};
+        this._deviceStatus = [];
+        this._timestamp = undefined;
+        this._connection = undefined;
+        this._mqttPrefix = CONFIG.mqtt.prefix;
+        this._discovery = false;
 
-// MQTT-Broker 연결 
-const client = mqtt.connect('mqtt://' + mqttVar.broker, {
-    port: mqttVar.port,
-    username: mqttVar.username,
-    password: mqttVar.password,
-    clientId: mqttVar.clientId,
-}, log("INFO   initialize mqtt..."));
-client.on('connect', () => {
-    log("INFO   MQTT connection successful!", "(" + mqttVar.broker, mqttVar.port + ")");
-    client.subscribe(CONST.DEVICE_TOPIC, (err) => { if (err) log('ERROR   MQTT subscribe fail! -', CONST.DEVICE_TOPIC) });
-});
-client.on('error', err => {
-    if (err.code == "ECONNREFUSED") {
-        log("ERROR   Make sure mqtt broker is enabled")
-    } else { log("ERROR   MQTT connection failed: " + err.message); }
-});
-client.on("offline", () => {
-    log("WARNING   MQTT currently offline. Please check mqtt broker!");
-});
-client.on("reconnect", () => {
-    log("INFO   MQTT reconnection starting...");
-});
-
-if (portVar.type == 'serial') {
-    log('INFO   connection type: Serial')
-    log('INFO   initialize serial...')
-    RS485 = new SerialPort({
-        path: CONST.portName,
-        baudRate: 9600,
-        dataBits: 8,
-        parity: 'none',
-        stopBits: 1,
-        autoOpen: false,
-        encoding: 'hex'
-    });
-    parser = RS485.pipe(new CustomParser());
-    RS485.on('open', () => log('INFO   Success open port:', CONST.portName));
-    RS485.on('close', () => log('WARNING   Close port:', CONST.portName));
-    RS485.open((err) => {
-        if (err) {
-            return log('ERROR  Failed to open port:', err.message);
-        }
-    });
-}
-else {
-    log('INFO   connection type: Socket')
-    log('INFO   initialize socket...')
-    RS485 = new net.Socket();
-    RS485.connect(portVar.port, portVar.addr, function () {
-        log('INFO   Success connected to server', "(" + portVar.addr, portVar.port + ")");
-    });
-    RS485.on('error', (err) => {
-        log('ERROR   server connection failed:', err.message)
-    });
-    parser = RS485.pipe(new CustomParser());
-};
-
-// Smart1
-if (smart1Var.type == 'serial') {
-    log('INFO   Smart1 connection type: Serial')
-    log('INFO   initialize serial...')
-    smart1485 = new SerialPort({
-        path: CONST.portRECV,
-        baudRate: 9600,
-        dataBits: 8,
-        parity: 'none',
-        stopBits: 1,
-        autoOpen: false,
-        encoding: 'hex'
-    });
-    smart1 = smart1485.pipe(new CustomParser());
-    smart1485.on('open', () => log('INFO   Success open smart1 port:', CONST.portRECV));
-    smart1485.on('close', () => log('WARNING   Close smart1 port:', CONST.portRECV));
-    smart1485.open((err) => {
-        if (err) {
-            return log('ERROR   Failed to open smart1 port:', err.message);
-        }
-    });
-} else if (smart1Var.type == 'socket') {
-    log('INFO   Smart1 connection type: Socket')
-    log('INFO   initialize socket...')
-    smart1485 = new net.Socket();
-    smart1485.connect(smart1Var.port, smart1Var.addr, function () {
-        log('INFO   Success connected to smart1', "(" + smart1Var.addr, smart1Var.port + ")");
-    });
-    smart1485.on('error', (err) => {
-        if (err.code == "ETIMEDOUT") {
-            log("ERROR   Make sure socket is activated")
-        } else { log('ERROR   Smart1 connection failed:', err.message) }
-    });
-    smart1 = smart1485.pipe(new CustomParser());
-}
-
-// Smart2
-if (smart2Var.type == 'serial') {
-    log('INFO   Smart2 connection type: Serial')
-    log('INFO   initialize serial...')
-    smart2485 = new SerialPort({
-        path: CONST.portSEND,
-        baudRate: 9600,
-        dataBits: 8,
-        parity: 'none',
-        stopBits: 1,
-        autoOpen: false,
-        encoding: 'hex'
-    });
-    smart2 = smart2485.pipe(new CustomParser());
-    smart2485.on('open', () => log('INFO   Success open smart2 port:', CONST.portSEND));
-    smart2485.on('close', () => log('WARNING   Close smart2 port:', CONST.portSEND));
-    smart2485.open((err) => {
-        if (err) {
-            return log('ERROR   Failed to open smart2 port:', err.message);
-        }
-    });
-} else if (smart2Var.type == 'socket') {
-    log('INFO   Smart2 connection type: Socket')
-    log('INFO   initialize socket...')
-    smart2485 = new net.Socket();
-    smart2485.connect(smart2Var.port, smart2Var.addr, function () {
-        log('INFO   Success connected to smart2', "(" + smart2Var.addr, smart2Var.port + ")");
-    });
-    smart2485.on('error', (err) => {
-        if (err.code == "ETIMEDOUT") {
-            log("ERROR   Make sure socket is activated")
-        } else { log('ERROR   Smart2 connection failed:', err.message) }
-    });
-    smart2 = smart2485.pipe(new CustomParser());
-}
-
-function CheckSum(data, count) {
-    var sum = AddSum(data, count);
-    if (sum != data[count]) {
-        return sum;
-    }
-    return true;
-}
-
-function AddSum(data, count) {
-    var sum = 0x03;
-    for (var i = 0; i < count; i++) {
-        sum = ((data[i] ^ sum) + 1) & 0xff
-    }
-    return sum;
-}
-
-// 홈넷에서 SerialPort로 상태 정보 수신
-parser.on('data', function (data) {
-    lastReceive = new Date().getTime();
-
-    if (data[0] != 0x02) return;
-    if (data[2] == 0x14) {
-        switch (data[3]) {
-            case 0x91: //상태
-                let objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Room');
-                if (objFound) {
-                    //조명, 콘센트 상태 정보
-                    objFound.subId = data[1].toString(16).substring(1);
-                    objFound.curPower1 = ((data[11] + data[12]) / 10).toString(10);
-                    objFound.curPower2 = ((data[15] + data[16]) / 10).toString(10);
-                    objFound.light1 = (data[6] & 0x01) ? 'ON' : 'OFF'
-                    objFound.light2 = (data[6] & 0x02) ? 'ON' : 'OFF'
-                    objFound.light3 = (data[6] & 0x04) ? 'ON' : 'OFF'
-                    objFound.light4 = (data[6] & 0x09) ? 'ON' : 'OFF'
-                    objFound.light5 = (data[6] & 0x10) ? 'ON' : 'OFF'
-                    objFound.outlet1 = (data[9] & 0x01) ? 'ON' : 'OFF'
-                    objFound.outlet2 = (data[9] & 0x03) ? 'ON' : 'OFF'
-                    objFound.idlePower1 = (data[9] & 0x02) ? 'ON' : 'OFF'
-                    objFound.idlePower2 = (data[9] & 0x04) ? 'ON' : 'OFF'
-                }
-                updateStatus(objFound);
-
-            case 0x92:
-                let objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Room');
-                objFoundIdx = queue.findIndex(e => ((data[3] == 0x92) && (data[0] == e.commandHex[0]) && (data[1] == e.commandHex[1])));
-                if (objFoundIdx > -1) {
-                    log('INFO   Success command from Ack # Set State=', retryCnt);
-                    queue.splice(objFoundIdx, 1);
-                    retryCnt = 0;
-                }
-        }
+        this._mqttClient = this.mqttClient();
+        this._connDevice = this.createConnection();
     }
 
-    switch (data[1]) {
-        case 0x31:
-            switch (data[2]) {
-                case 0x80: //상태
-                    let objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Gas');
-                    if (objFound) {
-                        objFound.power = (data[5] == 0x01) ? 'ON' : 'OFF'
-                        updateStatus(objFound);
+    mqttClient() {
+        const client = mqtt.connect(`mqtt://${CONFIG.mqtt.broker}`, {
+            port: CONFIG.mqtt.port,
+            username: CONFIG.mqtt.username,
+            password: CONFIG.mqtt.password,
+            clientId: 'BESTIN_WALLPAD',
+        });
+
+        client.on("connect", () => {
+            log("MQTT connection successful!");
+            this._deviceReady = true; // mqtt 연결 성공하면 장치 준비 완료
+            const topics = ["bestin/+/+/+/command", "homeassistant/status"];
+            topics.forEach(topic => {
+                client.subscribe(topic, (err) => {
+                    if (err) {
+                        error(`failed to subscribe to ${topic}`);
                     }
+                });
+            });
+        });
 
-                case 0x82: //제어
-                    let objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Gas');
-                    objFoundIdx = queue.findIndex(e => ((data[2] == 0x82) && (data[0] == e.commandHex[0]) && (data[1] == e.commandHex[1])));
-                    if (objFoundIdx > -1) {
-                        log('INFO   Success command from Ack # Set State=', retryCnt);
-                        queue.splice(objFoundIdx, 1);
-                        retryCnt = 0;
-                    }
-            }
-            break;
+        client.on("error", (err) => {
+            error(`MQTT connection error: ${err}`);
+            this._deviceReady = false;
+        });
 
-        case 0x41:
-            switch (data[2]) {
-                case 0x80: //상태
-                    let objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Doorlock');
-                    if (objFound) {
-                        objFound.power = (data[5] == 0x52) ? 'ON' : 'OFF'
-                        updateStatus(objFound);
-                    }
+        client.on("reconnect", () => {
+            warn("MQTT connection lost. try to reconnect...");
+        });
+        log("initializing mqtt...");
 
-                case 0x82: //제어
-                    let objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Doorlock');
-                    objFoundIdx = queue.findIndex(e => ((data[2] == 0x82) && (data[0] == e.commandHex[0]) && (data[1] == e.commandHex[1])));
-                    if (objFoundIdx > -1) {
-                        log('INFO   Success command from Ack # Set State=', retryCnt);
-                        queue.splice(objFoundIdx, 1);
-                        retryCnt = 0;
-                    }
-            }
-            break;
-
-        case 0x61: //상태
-            switch (data[2]) {
-                case 0x80:
-                    let objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Fan');
-                    if (objFound) {
-                        if (data[5] == 0x00 | data[5] == 0x01) {
-                            objFound.power = (data[5] == 0x01) ? 'ON' : 'OFF'
-                        } else {
-                            objFound.power = (data[5] == 0x11) ? 'nature ON' : 'nature OFF'
-                        }
-                        switch (objFound.preset = data[6]) {
-                            case 0x01: objFound.preset = 'low'; break;
-                            case 0x02: objFound.preset = 'mid'; break;
-                            case 0x03: objFound.preset = 'high'; break;
-                        }
-                        updateStatus(objFound);
-                    }
-
-                case 0x81: case 0x83: case 0x87: //제어
-                    let objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Fan');
-                    objFoundIdx = queue.findIndex(e => ((data[2] == 0x81 & data[2] == 0x83 & data[2] == 0x87) && (data[0] == e.commandHex[0]) && (data[1] == e.commandHex[1])));
-                    if (objFoundIdx > -1) {
-                        log('INFO   Success command from Ack # Set State=', retryCnt);
-                        queue.splice(objFoundIdx, 1);
-                        retryCnt = 0;
-                    }
-            }
-            break;
-
-        case 0x28:
-            switch (data[3]) {
-                case 0x91:
-                    let objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Thermo')
-                    //난방 상태 정보
-                    objFound.subId = Number(data[5]);
-                    //0x01: 켜짐, 0x02: 꺼짐, 0x07: 대기, 0x11: 켜짐
-                    if (data[6] == 0x01 | data[6] == 0x11) { objFound.power = 'heat' }
-                    else if (data[6] == 0x02 | data[6] == 0x07) { objFound.power = 'off' }
-                    objFound.setTemp = ((data[7] & 0x3f) + ((data[7] & 0x40) / 128)).toString(10);
-                    objFound.curTemp = ((data[8] * 256 + data[9]) / 10.0).toString(10);
-                    updateStatus(objFound);
-
-                case 0x92: //제어
-                    let objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Thermo');
-                    objFoundIdx = queue.findIndex(e => ((data[3] == 0x92) && (data[0] == e.commandHex[0]) && (data[1] == e.commandHex[1])));
-                    if (objFoundIdx > -1) {
-                        log('INFO   Success command from Ack # Set State=', retryCnt);
-                        queue.splice(objFoundIdx, 1);
-                        retryCnt = 0;
-                    }
-            }
-            break;
-    }
-});
-
-smart1.on('data', function (data) {
-    lastReceive = new Date().getTime();
-    //console.log('Smart1>> Receive interval: ', (new Date().getTime()) - EVlastReceive, 'ms ->', data.toString('hex'));
-    packet2 = {
-        timestamp: data.slice(4, 5).toString('hex'),
-        state: data.slice(11, 12).toString('hex'),
-        floor: data.slice(12, 13).toString('hex')
+        // ha에서 mqtt로 제어 명령 수신
+        client.on("message", this.mqttCommand.bind(this));
+        return client;
     }
 
-    if (data.length !== 19) return;
-    let objFound = CONST.DEVICE_STATE.find(obj => obj.deviceId === 'Elevator');
-    if (objFound) {
-        if (data[3] == 0x13) {
-            objFound.power = (packet2.state == '01') ? 'ON' : 'OFF'
-            switch (packet2.state) {
-                case '00': objFound.direction = '대기'; break; //idle
-                case '01': objFound.direction = '이동중'; break; //moving
-                case '04': objFound.direction = '도착'; break; //arrived
-            }
-    
-            if (data[12] == 0xFF) {
-                objFound.floor = '대기 층'
-            } else if (data[12] & 0x80) {
-                objFound.floor = (`B${(data[12] & 0x7f).toString(10)} 층`)
-                log(`smart>> Elevator Current Floor: B${ data[12] & 0x7f }층`)
-            } else {
-                objFound.floor = (`${(data[12] & 0xff).toString(10)} 층`)
-                log(`smart>> Elevator Current Floor: ${data[12] & 0xff}층`)
-            }
-        }
-        updateStatus(objFound);
-    }
-
-    if ((data[11] == 0x01) || (data[12] == 0xff)) {
-        let objFoundIdx = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Elevator');
-        objFoundIdx = queue.findIndex(e => ((data[11] == 0x01) && (data[0] == e.commandHex[0]) && (data[1] == e.commandHex[1])));
-        if (objFoundIdx > -1) {
-            log('INFO   Success command from Ack # Set State=', retryCnt);
-            queue.splice(objFoundIdx, 1);
-            retryCnt = 0;
-        }
-        return;
-    }
-});
-
-smart2.on('data', function (data) {
-    lastReceive = new Date().getTime();
-    //console.log('Smart2>> Receive interval: ', (new Date().getTime()) - EVlastReceive, 'ms ->', data.toString('hex'));
-
-    if (data[0] != 0x02) return;
-    let objFound = CONST.DEVICE_COMMAND.find(obj => obj.deviceId === 'Elevator');
-    prefix = Buffer.from('02C10C91', 'hex')
-    timestamp = Buffer.from(packet2.timestamp, 'hex')
-    next_ts = Buffer.from('100100020102', 'hex')
-    data = Buffer.concat([prefix, timestamp, next_ts])
-    buf_sum = Buffer.from(CheckSum(data, 11).toString(16), 'hex')
-    buf_commandHex = Buffer.concat([data, buf_sum])
-    objFound.commandHex = buf_commandHex.toString('hex')
-});
-
-// MQTT로 HA에 상태값 전송
-var updateStatus = (obj) => {
-    if (obj) {
-        var arrStateName = Object.keys(obj);
-    } else {
-        return null;
-    }
-
-    // 상태값이 아닌 항목들은 제외 [deviceId, subId, stateHex, commandHex, sentTime]
-    const arrFilter = ['deviceId', 'subId', 'stateHex', 'commandHex', 'sentTime'];
-    const hideFilter = ['curPower1', 'curPower2', 'curTemp'];
-    arrStateName = arrStateName.filter(stateName => !arrFilter.includes(stateName));
-
-    // 상태값별 현재 상태 파악하여 변경되었으면 상태 반영 (MQTT publish)
-    arrStateName.forEach(function (stateName) {
-        // 상태값이 없거나 상태가 같으면 반영 중지
-        var curStatus = homeStatus[obj.deviceId + obj.subId + stateName];
-        if (obj[stateName] == null || obj[stateName] === curStatus) return;
-        // 미리 상태 반영한 device의 상태 원복 방지
-        if (queue.length > 0) {
-            var found = queue.find(q => q.deviceId + q.subId === obj.deviceId + obj.subId && q[stateName] === curStatus);
-            // log('WARNING  ', obj.deviceId + obj.subId, '->', 'State reflection complete & skip');
-            if (found != null) return;
-        }
-        // 상태 반영 (MQTT publish)
-        homeStatus[obj.deviceId + obj.subId + stateName] = obj[stateName];
-        var topic = util.format(CONST.STATE_TOPIC, obj.deviceId, obj.subId, stateName);
-        client.publish(topic, obj[stateName], { retain: true });
-
-        if (!hideFilter.includes(stateName)) {
-            log('INFO   Send to HA:', topic, '->', obj[stateName]);
-        }
-    });
-}
-
-// HA에서 MQTT로 제어 명령 수신
-client.on('message', (topic, message) => {
-    if (mqttReady) {
-        var topics = topic.split('/');
-        var value = message.toString(); // message buffer이므로 string으로 변환
-        var objFound = null;
-        if (topics[0] === CONST.TOPIC_PRFIX) {
-            // 온도설정 명령의 경우 모든 온도를 Hex로 정의해두기에는 많으므로 온도에 따른 시리얼 통신 메시지 생성
-            if (topics[2] === 'setTemp') {
-                objFound = CONST.DEVICE_COMMAND.find(obj => obj.deviceId + obj.subId === topics[1] && obj.hasOwnProperty('setTemp'));
-                objFound.commandHex[7] = Number(value);
-                objFound.setTemp = String(Number(value)); // 온도값은 소수점이하는 버림
-                data = objFound.commandHex;
-                objFound.commandHex[13] = CheckSum(data, 11); // 마지막 Byte는 XOR SUM
-            }
-            // 다른 명령은 미리 정의해놓은 값을 매칭
-            else {
-                objFound = CONST.DEVICE_COMMAND.find(obj => obj.deviceId + obj.subId === topics[1] && obj[topics[2]] === value);
-            }
-        }
-
-        if (objFound == null) {
-            log('WARNING   Receive Unknown Msg.: ', topic, ':', value);
+    mqttCommand(topic, message) {
+        if (!this._deviceReady) {
+            warn("MQTT is not ready yet");
             return;
         }
-
-        // 현재 상태와 같으면 Skip
-        if (value === homeStatus[objFound.deviceId + objFound.subId + objFound[topics[2]]]) {
-            log('INFO   Receive & Skip: ', topic, ':', value);
+        const topics = topic.split("/");
+        const value = message.toString();
+        if (topics[0] !== this._mqttPrefix) {
+            return;
         }
-        // Serial메시지 제어명령 전송 & MQTT로 상태정보 전송
-        else {
-            log('INFO   Receive from HA:', topic, ':', value);
-            // 최초 실행시 딜레이 없도록 sentTime을 현재시간 보다 sendDelay만큼 이전으로 설정
-            objFound.sentTime = (new Date().getTime()) - CONST.SEND_DELAY;
-            queue.push(objFound);   // 실행 큐에 저장
-            updateStatus(objFound); // 처리시간의 Delay때문에 미리 상태 반영
-            retryCnt = 0;
+        const [device, roomIdx, propertyName] = topics.slice(1, 4);
+        this.setCommandProperty(device, roomIdx, propertyName, value);
+    }
+
+    mqttClientUpdate(device, roomIdx, propertyName, propertyValue) {
+        if (!this._deviceReady) {
+            return;
+        }
+        const topic = `${this._mqttPrefix}/${device}/${roomIdx}/${propertyName}/state`;
+
+        if (typeof (propertyValue) !== 'number') {
+            log(`publish mqtt: ${topic} = ${propertyValue}`);
+        }
+        this._mqttClient.publish(topic, String(propertyValue), { retain: true });
+    }
+
+    mqttDiscovery(device, roomIdx, Idx) {
+        switch (device) {
+            case 'light':
+                var topic = `homeassistant/light/bestin_wallpad/light_${roomIdx}_${Idx}/config`;
+                var payload = {
+                    name: `bestin_light_${roomIdx}_${Idx}`,
+                    cmd_t: `${this._mqttPrefix}/light/${roomIdx}/${Idx}/command`,
+                    stat_t: `${this._mqttPrefix}/light/${roomIdx}/${Idx}/state`,
+                    uniq_id: `bestin_light_${roomIdx}_${Idx}`,
+                    pl_on: "on",
+                    pl_off: "off",
+                    device: {
+                        ids: "bestin_infancy",
+                        name: "bestin_infancy",
+                        mf: "HDC BESTIN",
+                        mdl: "HDC BESTIN Wallpad",
+                        sw: "harwin1/bestin-v1/bestin_infancy",
+                    }
+                }
+                break;
+            case 'outlet':
+                let component = Idx.includes("usage") ? "sensor" : "switch";
+                var topic = `homeassistant/${component}/bestin_wallpad/outlet_${roomIdx}_${Idx}/config`;
+                var payload = {
+                    name: `bestin_outlet_${roomIdx}_${Idx}`,
+                    cmd_t: `${this._mqttPrefix}/outlet/${roomIdx}/${Idx}/command`,
+                    stat_t: `${this._mqttPrefix}/outlet/${roomIdx}/${Idx}/state`,
+                    uniq_id: `bestin_outlet_${roomIdx}_${Idx}`,
+                    pl_on: "on",
+                    pl_off: "off",
+                    ic: Idx.includes("usage") ? "mdi:lightning-bolt" : "mdi:power-socket-eu",
+                    unit_of_meas: Idx.includes("usage") ? "Wh" : "",
+                    device: {
+                        ids: "bestin_infancy",
+                        name: "bestin_infancy",
+                        mf: "HDC BESTIN",
+                        mdl: "HDC BESTIN Wallpad",
+                        sw: "harwin1/bestin-v1/bestin_infancy",
+                    }
+                }
+                break;
+            case 'thermostat':
+                var topic = `homeassistant/climate/bestin_wallpad/thermostat_${roomIdx}/config`;
+                var payload = {
+                    name: `bestin_thermostat_${roomIdx}`,
+                    mode_cmd_t: `${this._mqttPrefix}/thermostat/${roomIdx}/mode/command`,
+                    mode_stat_t: `${this._mqttPrefix}/thermostat/${roomIdx}/mode/state`,
+                    temp_cmd_t: `${this._mqttPrefix}/thermostat/${roomIdx}/setting/command`,
+                    temp_stat_t: `${this._mqttPrefix}/thermostat/${roomIdx}/setting/state`,
+                    curr_temp_t: `${this._mqttPrefix}/thermostat/${roomIdx}/current/state`,
+                    uniq_id: `bestin_thermostat_${roomIdx}`,
+                    modes: ["off", "heat"],
+                    min_temp: 5,
+                    max_temp: 40,
+                    temp_step: 0.1,
+                    device: {
+                        ids: "bestin_infancy",
+                        name: "bestin_infancy",
+                        mf: "HDC BESTIN",
+                        mdl: "HDC BESTIN Wallpad",
+                        sw: "harwin1/bestin-v1/bestin_infancy",
+                    }
+                }
+                break;
+            case 'ventil':
+                var topic = `homeassistant/fan/bestin_wallpad/ventil_${roomIdx}/config`;
+                var payload = {
+                    name: `bestin_ventil_${roomIdx}`,
+                    cmd_t: `${this._mqttPrefix}/ventil/${roomIdx}/power/command`,
+                    stat_t: `${this._mqttPrefix}/ventil/${roomIdx}/power/state`,
+                    pr_mode_cmd_t: `${this._mqttPrefix}/ventil/${roomIdx}/preset/command`,
+                    pr_mode_stat_t: `${this._mqttPrefix}/ventil/${roomIdx}/preset/state`,
+                    pr_modes: ["01", "02", "03"],
+                    uniq_id: `bestin_vnetil_${roomIdx}`,
+                    pl_on: "on",
+                    pl_off: "off",
+                    device: {
+                        ids: "bestin_infancy",
+                        name: "bestin_infancy",
+                        mf: "HDC BESTIN",
+                        mdl: "HDC BESTIN Wallpad",
+                        sw: "harwin1/bestin-v1/bestin_infancy",
+                    }
+                }
+                break;
+            case 'gas':
+                var topic = `homeassistant/switch/bestin_wallpad/gas_valve_${roomIdx}/config`;
+                var payload = {
+                    name: `bestin_gas_valve_${roomIdx}`,
+                    cmd_t: `${this._mqttPrefix}/gas/${roomIdx}/power/command`,
+                    stat_t: `${this._mqttPrefix}/gas/${roomIdx}/power/state`,
+                    uniq_id: `bestin_gas_valve_${roomIdx}`,
+                    pl_on: "on",
+                    pl_off: "off",
+                    ic: "mdi:gas-cylinder",
+                    device: {
+                        ids: "bestin_infancy",
+                        name: "bestin_infancy",
+                        mf: "HDC BESTIN",
+                        mdl: "HDC BESTIN Wallpad",
+                        sw: "harwin1/bestin-v1/bestin_infancy",
+                    }
+                }
+                break;
+        }
+        this._mqttClient.publish(topic, JSON.stringify(payload), { retain: true });
+    }
+
+    // 패킷 체크섬 검증
+    verifyCheckSum(packet) {
+        // 3으로 초기화
+        let result = 0x03;
+        for (let i = 0; i < packet.length; i++) {
+            result ^= packet[i];
+            result = (result + 1) & 0xFF;
+            // 바이트를 순차적으로 xor 한뒤 +1 / 8비트로 truncation
+        }
+        return result;
+    }
+
+    // 명령 패킷 마지막 바이트(crc) 생성
+    generateCheckSum(packet) {
+        let result = 0x03;
+        for (let i = 0; i < packet.length - 1; i++) {
+            result ^= packet[i];
+            result = (result + 1) & 0xFF;
+        }
+        return result;
+    }
+
+    createConnection() {
+        if (CONFIG.serial_mode === 'serial') {
+            log('intalizing serial...')
+            const options = CONFIG.serial;
+
+            this._connection = new SerialPort({
+                path: options.port,
+                baudRate: options.baudrate,
+                dataBits: options.bytesize,
+                parity: options.parity,
+                stopBits: options.stopbits,
+                autoOpen: false,
+                encoding: 'hex'
+            });
+
+            this._connection.pipe(new CustomParser()).on('data', this.packetHandle.bind(this));
+            this._connection.on('open', () => {
+                log(`successfully opened port: ${options.port}`);
+            });
+            this._connection.on('close', () => {
+                warn(`closed port: ${options.port}`);
+            });
+            this._connection.open((err) => {
+                if (err) {
+                    error(`failed to open port: ${err.message}`);
+                }
+            });
+
+        } else if (CONFIG.serial_mode === 'socket') {
+            log('intalizing socket...')
+            const options = CONFIG.socket;
+
+            this._connection = new net.Socket();
+            this._connection.connect(options.port, options.address, () => {
+                log(`successfully connected to ew11 [${options.address}:${options.port}]`);
+            });
+            this._connection.on('error', (err) => {
+                error(`connection error ${err.code}. try to reconnect...`);
+                this._connection.connect(options.port, options.address);
+                // 연결 애러 발생시 reconnect
+            });
+            this._connection.pipe(new CustomParser()).on('data', this.packetHandle.bind(this));
+        }
+        return this._connection;
+
+    }
+
+    packetHandle(packet) {
+        //console.log(packet.toString('hex'));
+        if(packet.length === 20) {
+            this._timestamp = packet[4];
+        }
+        this._lastReceive = Date.now();
+
+        const receivedMsg = this._receivedMsgs.find(e => e.codeHex.equals(packet)) || {
+            code: packet.toString('hex'),
+            codeHex: packet,
+            count: 0,
+            info: MSG_INFO.filter(e => {
+                if (e.device === 'light' || e.device === 'outlet') {    
+                    return e.header < packet[1] && e.command == packet[3] && e.length == packet[2];
+                } else {
+                    return e.header == packet[1] && e.command == packet[2];
+                }
+            }),
+        };
+        receivedMsg.checksum = this.verifyCheckSum(packet);
+        receivedMsg.count++;
+        receivedMsg.lastlastReceive = receivedMsg.lastReceive;
+        receivedMsg.lastReceive = this._lastReceive;
+
+        if (Boolean(receivedMsg.checksum) === false) {
+            error(`checksum error: ${receivedMsg.code}, ${receivedMsg.codeHex}`);
+            return;
+        }       
+        const PT2Byte = [0x81, 0x82, 0x83];
+        const PT3Byte = [0x81, 0x92];
+        const foundIdx = this._serialCmdQueue.findIndex(e => e.cmdHex[1] == packet[1] && (PT2Byte.includes(packet[2]) || PT3Byte.includes(packet[3])));
+        if (foundIdx > -1) {
+            log(`Success command: ${this._serialCmdQueue[foundIdx].device}`);
+            const { callback, device } = this._serialCmdQueue[foundIdx];
+            if (callback) callback(receivedMsg);
+            this._serialCmdQueue.splice(foundIdx, 1);
+        }
+
+        for (const msgInfo of receivedMsg.info) {
+            if (msgInfo.parseToProperty) {
+                const propArray = msgInfo.parseToProperty(packet);
+                for (const { device, roomIdx, propertyName, propertyValue } of propArray) {
+                    this.updateProperty(device, roomIdx, propertyName, propertyValue, foundIdx > -1);
+                }
+            }
         }
     }
-});
 
+    addCommandToQueue(cmdHex, device, roomIdx, propertyName, propertyValue, callback) {
+        const serialCmd = {
+            cmdHex,
+            device,
+            roomIdx,
+            property: propertyName,
+            value: propertyValue,
+            callback,
+            sentTime: new Date(),
+            retryCount: CONFIG.rs485.retry_count
+        };
 
-// SerialPort로 제어 명령 전송
-const commandProc = () => {
-    // 큐에 처리할 메시지가 없으면 종료
-    if (queue.length == 0) return;
+        this._serialCmdQueue.push(serialCmd);
+        log(`send to device: ${cmdHex.toString('hex')}`);
 
-    // 기존 홈넷 RS485 메시지와 충돌하지 않도록 Delay를 줌
-    var delay = (new Date().getTime()) - lastReceive;  //serial
-    if (delay < CONST.SEND_DELAY) return;
-    if (!mqttReady) return;
+        const elapsed = serialCmd.sentTime - this._lastReceive;
+        const delay = (elapsed < 100) ? 100 - elapsed : 0;
 
-    // 큐에서 제어 메시지 가져오기
-    var obj = queue.shift();
-    var objfilter = ['Fan', 'Thermo', 'Gas', 'Doorlock', 'Room'];
-
-    if (objfilter.includes(obj.deviceId)) {
-        RS485.write(obj.commandHex, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
-        log('INFO  ', 'RS485>> Send to Device:', obj.deviceId, obj.subId, '->', obj.state, obj.commandHex.toString('hex'));
-    } else if (obj.deviceId === 'Elevator') {
-        smart2485.write(obj.commandHex, (err) => { if (err) return log('ERROR  ', 'Send Error: ', err.message); });
-        log('INFO  ', 'Smart>> Send to Device:', obj.deviceId, obj.subId, '->', obj.state, obj.commandHex.toString('hex'));
+        setTimeout(() => this.processCommand(serialCmd), delay);
     }
-    obj.sentTime = lastReceive;
 
-    // ack메시지가 오지 않는 경우 방지
-    retryCnt++;
-    if (retryCnt < CONST.MAX_RETRY) {
-        // 다시 큐에 저장하여 Ack 메시지 받을때까지 반복 실행
-        queue.push(obj);
-    } else {
-        // 보통 패킷을 수정하다가 맨 뒤에 있는 체크섬이 틀리거나 ew11 과부하 걸리는 경우(ew11 재부팅 시도)
-        log('ERROR   Packet send error Please check packet or ew11 =>', obj.commandHex.toString('hex'));
-        retryCnt = 0;
+    processCommand(serialCmd) {
+        if (this._serialCmdQueue.length == 0) {
+            return;
+        }
+        serialCmd = this._serialCmdQueue.shift();
+
+        this._connDevice.write(serialCmd.cmdHex, (err) => {
+            if (err) {
+                error('Send Error:', err.message);
+            }
+        });
+
+        if (serialCmd.retryCount > 0) {
+            serialCmd.retryCount--;
+            this._serialCmdQueue.push(serialCmd);
+            setTimeout(() => this.processCommand(serialCmd), CONFIG.rs485.retry_delay);
+        } else {
+            error(`maximum retries ${CONFIG.rs485.retry_count} times exceeded for command`);
+            if (serialCmd.callback) {
+                serialCmd.callback.call(this);
+            }
+        }
     }
-};
 
-setTimeout(() => { mqttReady = true; log('INFO   MQTT ready...') }, CONST.MQTT_DELAY);
-setInterval(commandProc, 20);
+    setCommandProperty(device, roomIdx, propertyName, propertyValue, callback) {
+        log(`recv. from HA: ${this._mqttPrefix}/${device}/${roomIdx}/${propertyName}/command = ${propertyValue}`);
+
+        const msgInfo = MSG_INFO.find(e => e.setPropertyToMsg && e.device === device);
+        if (!msgInfo) {
+            warn(`unknown device: ${device}`);
+            return;
+        }
+        if (msgInfo.device === 'gas' && propertyValue === 'on') {
+            warn('The gas valve only supports locking');
+            return;
+        }
+        const cmdHex = Buffer.alloc(msgInfo.length);
+        const byte2 = msgInfo.length == 10 ? msgInfo.command : msgInfo.length;
+        const byte3 = msgInfo.length == 10 ? this._timestamp : msgInfo.command;
+        const byte4 = msgInfo.length == 10 ? '' : this._timestamp;
+
+        cmdHex[0] = 0x02;
+        cmdHex[1] = msgInfo.header;
+        cmdHex[2] = byte2;
+        cmdHex[3] = byte3;
+        cmdHex[4] = byte4;
+
+        msgInfo.setPropertyToMsg(cmdHex, roomIdx, propertyName, propertyValue);
+        cmdHex[msgInfo.length - 1] = this.generateCheckSum(cmdHex);
+
+        this.addCommandToQueue(cmdHex, device, roomIdx, propertyName, propertyValue, callback);
+        this.updateProperty(device, roomIdx, propertyName, propertyValue);
+    }
+
+    putStatusProperty(device, roomIdx, property) {
+        var deviceStatus = {
+            device: device,
+            roomIdx: roomIdx,
+            property: (property ? property : {})
+        };
+        this._deviceStatus.push(deviceStatus);
+        return deviceStatus;
+    }
+
+    updateProperty(device, roomIdx, propertyName, propertyValue, force) {
+        const propertyKey = device + roomIdx + propertyName;
+        const isSamePropertyValue = !force && this._deviceStatusCache[propertyKey] === propertyValue;
+        if (isSamePropertyValue) return;
+
+        const isPendingCommand = this._serialCmdQueue.some(e => e.device === device && e.roomIdx === roomIdx && e.property === propertyName && e.value === this._deviceStatusCache[propertyKey]);
+        if (isPendingCommand) return;
+
+        this._deviceStatusCache[propertyKey] = propertyValue;
+
+        let deviceStatus = this._deviceStatus.find(o => o.device === device && o.roomIdx === roomIdx);
+        if (!deviceStatus) {
+            deviceStatus = this.putStatusProperty(device, roomIdx);
+        }
+        deviceStatus.property[propertyName] = propertyValue;
+
+        this.mqttClientUpdate(device, roomIdx, propertyName, propertyValue);
+
+        let regist = setImmediate(() => {
+            if (this._discovery === false) {
+                if (CONFIG.mqtt.discovery) { this.mqttDiscovery(device, roomIdx, propertyName) };
+            } else {
+                return true;
+            }
+        });
+        setTimeout(() => {
+            clearImmediate(regist);
+            this._discovery = true;
+        }, 10000);
+    }
+}
+
+_rs485 = new rs485();
