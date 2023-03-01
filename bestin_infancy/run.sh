@@ -2,14 +2,14 @@
 
 share_dir="/share/bestin"
 
-if [ ! -f "$share_dir/bestin.js" ]; then
+if [ ! -f "$share_dir/bestin_infancy.js" ]; then
     if ! mkdir -p "$share_dir"; then
         echo "ERROR: Failed to create directory $share_dir"
         exit 1
     fi
 
-    if ! mv /bestin.js "$share_dir"; then
-        echo "ERROR: Failed to move bestin.js to $share_dir"
+    if ! mv /bestin_infancy.js "$share_dir"; then
+        echo "ERROR: Failed to move bestin_infancy.js to $share_dir"
         exit 1
     fi
 fi
@@ -17,7 +17,7 @@ fi
 echo "INFO: Running bestin Addon..."
 cd "$share_dir"
 if ! node bestin.js; then
-    echo "ERROR: Failed to run bestin.js"
+    echo "ERROR: Failed to run bestin_infancy.js"
     exit 1
 fi
 
