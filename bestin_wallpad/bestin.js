@@ -17,7 +17,7 @@ const xml2js = require('xml2js');
 
 // 커스텀 파서
 const Transform = require('stream').Transform;
-const CONFIG = require('/data/options.json');
+const CONFIG = require('./config.json');
 
 // 로그 표시 
 const log = (...args) => console.log('[' + (new Date()).toLocaleString() + ']', 'INFO     ', args.join(' '));
@@ -345,7 +345,7 @@ class rs485 {
                         name: "bestin_wallpad",
                         mf: "HDC BESTIN",
                         mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/bestin-v1/bestin-new",
+                        sw: "harwin1/bestin-v1/bestin_wallpad",
                     }
                 }
                 break;
@@ -366,7 +366,7 @@ class rs485 {
                         name: "bestin_wallpad",
                         mf: "HDC BESTIN",
                         mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/bestin-v1/bestin-new",
+                        sw: "harwin1/bestin-v1/bestin_wallpad",
                     }
                 }
                 break;
@@ -389,7 +389,7 @@ class rs485 {
                         name: "bestin_wallpad",
                         mf: "HDC BESTIN",
                         mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/bestin-v1/bestin-new",
+                        sw: "harwin1/bestin-v1/bestin_wallpad",
                     }
                 }
                 break;
@@ -410,7 +410,7 @@ class rs485 {
                         name: "bestin_wallpad",
                         mf: "HDC BESTIN",
                         mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/bestin-v1/bestin-new",
+                        sw: "harwin1/bestin-v1/bestin_wallpad",
                     }
                 }
                 break;
@@ -429,7 +429,7 @@ class rs485 {
                         name: "bestin_wallpad",
                         mf: "HDC BESTIN",
                         mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/bestin-v1/bestin-new",
+                        sw: "harwin1/bestin-v1/bestin_wallpad",
                     }
                 }
                 break;
@@ -445,7 +445,7 @@ class rs485 {
                         name: "bestin_wallpad",
                         mf: "HDC BESTIN",
                         mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/bestin-v1/bestin-new",
+                        sw: "harwin1/bestin-v1/bestin_wallpad",
                     },
                 };
                 break;
@@ -461,7 +461,7 @@ class rs485 {
                         name: "bestin_wallpad",
                         mf: "HDC BESTIN",
                         mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/bestin-v1/bestin-new",
+                        sw: "harwin1/bestin-v1/bestin_wallpad",
                     }
                 }
                 break;
@@ -477,7 +477,7 @@ class rs485 {
                         name: "bestin_wallpad",
                         mf: "HDC BESTIN",
                         mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/bestin-v1/bestin-new",
+                        sw: "harwin1/bestin-v1/bestin_wallpad",
                     }
                 }
                 break;
@@ -554,7 +554,7 @@ class rs485 {
 
     packetHandle(packet) {
         this._lastReceive = new Date();
-        if (packet[0] == 0x02 && packet[1] == 0x42) {
+        if (packet[0] == 0x02 && packet[1] !== 0x41) {
             this._syncTime = this._lastReceive;
             this._timestamp = packet[4];
         }
@@ -676,11 +676,12 @@ class rs485 {
         log(`recv. from HA: ${this._mqttPrefix}/${device}/${roomIdx}/${propertyName}/command = ${propertyValue}`);
 
         const msgInfo = MSG_INFO.find(e => e.setPropertyToMsg && e.device === device);
+        if (!msgInfo) {
+            warn(`unknown device: ${device}`);
+            return;
+        }
         if (msgInfo.device === 'gas' && propertyValue === 'on') {
             warn('The gas valve only supports locking');
-            return;
-        } else if (!msgInfo) {
-            warn(`unknown device: ${device}`);
             return;
         }
 
@@ -1110,4 +1111,3 @@ class rs485 {
 };
 
 _rs485 = new rs485();
-
