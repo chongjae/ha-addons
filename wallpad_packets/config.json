@@ -1,0 +1,54 @@
+{
+	"version": "0.1",
+	"slug": "packet_raw",
+	"name": "wallpad rs485 packet raw",
+	"description": "패킷 분석 애드온입니다. 시리얼/소켓 통신을 지원합니다.",
+	"url": "https://github.com/harwin1/wallpad_packets",
+	"startup": "application",
+	"boot": "auto",
+	"arch": [ "armhf", "armv7", "aarch64", "amd64", "i386" ],
+	"uart": true,
+	"map": [ "share:rw" ],
+	"options": {
+		"connection_type": "socket",
+		"debug_mode": false,
+        "debug_save": "renewal",
+		"serial": {
+			"port":  "/dev/ttyUSB0",
+			"baudrate": 9600,
+			"databits": 8,
+			"parity": "none",
+			"stopbits": 1
+		},
+		"socket": {
+			"address": "192.168.1.1",
+			"port": 8899
+		},
+		"debug_log": {
+			"file": "/share/packet_raw.txt",
+			"time": "60",
+            "delay": "1"
+		}
+	},
+	"schema": {
+		"connection_type": "list(serial|socket)",
+		"debug_mode": "Boolean",
+        "debug_save": "list(renewal|append)",
+		"serial": {
+			"port":  "str",
+			"baudrate": "int",
+			"databits": "int(5,8)",
+			"parity": "list(none|even|odd|mark|space)",
+			"stopbits": "int(0,3)"
+		},
+		"socket": {
+			"address": "str?",
+			"port": "int?"
+		},
+		"debug_log": {
+			"file": "str",
+			"time": "int",
+            "delay": "int"
+		}
+	}
+}
