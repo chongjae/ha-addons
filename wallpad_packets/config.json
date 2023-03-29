@@ -3,7 +3,7 @@
 	"slug": "packet_raw",
 	"name": "wallpad rs485 packet raw",
 	"description": "Extract wallpad packets using serial or socket communication",
-	"url": "https://github.com/harwin1/wallpad_packets",
+	"url": "https://github.com/harwin1/ha-addons",
 	"startup": "application",
 	"boot": "auto",
 	"arch": [ "armhf", "armv7", "aarch64", "amd64", "i386" ],
