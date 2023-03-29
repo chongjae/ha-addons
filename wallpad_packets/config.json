@@ -1,7 +1,7 @@
 {
 	"version": "0.1",
 	"slug": "packet_raw",
-	"name": "wallpad rs485 packet raw",
+	"name": "Wallpad RS485 Packet Raw",
 	"description": "Extract wallpad packets using serial or socket communication",
 	"url": "https://github.com/harwin1/ha-addons",
 	"startup": "application",
