@@ -2,7 +2,7 @@
 	"version": "0.1",
 	"slug": "packet_raw",
 	"name": "wallpad rs485 packet raw",
-	"description": "패킷 분석 애드온입니다. 시리얼/소켓 통신을 지원합니다.",
+	"description": "Extract wallpad packets using serial or socket communication",
 	"url": "https://github.com/harwin1/wallpad_packets",
 	"startup": "application",
 	"boot": "auto",
