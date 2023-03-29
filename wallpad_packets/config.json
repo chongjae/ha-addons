@@ -32,7 +32,7 @@
 	},
 	"schema": {
 		"connection_type": "list(serial|socket)",
-		"debug_mode": "Boolean",
+		"debug_mode": "bool",
         "debug_save": "list(renewal|append)",
 		"serial": {
 			"port":  "str",
