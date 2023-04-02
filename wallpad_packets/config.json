@@ -1,54 +1,152 @@
-{
-	"version": "0.1",
-	"slug": "packet_raw",
-	"name": "Wallpad RS485 Packet Raw",
-	"description": "Extract wallpad packets using serial or socket communication",
-	"url": "https://github.com/harwin1/ha-addons",
-	"startup": "application",
-	"boot": "auto",
-	"arch": [ "armhf", "armv7", "aarch64", "amd64", "i386" ],
-	"uart": true,
-	"map": [ "share:rw" ],
-	"options": {
-		"connection_type": "socket",
-		"debug_mode": false,
-        "debug_save": "renewal",
-		"serial": {
-			"port":  "/dev/ttyUSB0",
-			"baudrate": 9600,
-			"databits": 8,
-			"parity": "none",
-			"stopbits": 1
-		},
-		"socket": {
-			"address": "192.168.1.1",
-			"port": 8899
-		},
-		"debug_log": {
-			"file": "/share/packet_raw.txt",
-			"time": "60",
-            "delay": "1"
-		}
-	},
-	"schema": {
-		"connection_type": "list(serial|socket)",
-		"debug_mode": "bool",
-        "debug_save": "list(renewal|append)",
-		"serial": {
-			"port":  "str",
-			"baudrate": "int",
-			"databits": "int(5,8)",
-			"parity": "list(none|even|odd|mark|space)",
-			"stopbits": "int(0,3)"
-		},
-		"socket": {
-			"address": "str?",
-			"port": "int?"
-		},
-		"debug_log": {
-			"file": "str",
-			"time": "int",
-            "delay": "int"
-		}
-	}
+const { SerialPort } = require('serialport');
+const net = require('net');
+const fs = require('fs');
+const OPTIONS = require('./config.json').options;  
+
+const KOCOM_DEVICE = {
+    "00": "MAIN",
+    "01": "MAIN",
+    "0e": "LIGHT",
+    "2c": "GAS",
+    "33": "DOORLOCK",
+    "36": "THERMOSTAT",
+    "39": "AC",
+    "3b": "OUTLET",
+    "44": "EV",
+    "48": "FAN",
+    "60": "MOTION",
+    //"86": "IGNORE",
+};
+
+const BESTIN_DEVICE = {
+};
+
+const WALLPAD_PREFIX = {
+    "aa55": [KOCOM_DEVICE, [14, 16]],
+    //"02": [BESTIN_DEVICE, [4, 6]]
+};
+
+// 연결 타입 설정
+const connectionType = OPTIONS.connection_type;
+const debugMode = OPTIONS.debug_mode;
+
+if (connectionType == 'serial') serialCommunication();
+else if (connectionType == 'socket') socketCommunication();
+else throw new Error('Invalid connection type');
+
+if (debugMode) {
+    console.log('Debug mode enabled packet information is now stored in the', OPTIONS.debug_log.file, 'path');
+    if (!fs.existsSync(OPTIONS.debug_log.file)) {
+        fs.writeFileSync(OPTIONS.debug_log.file, '');
+        console.log('Debug log file created');
+    }
+}
+
+function serialCommunication() {
+    console.log('initializing serial...');
+
+    const port = new SerialPort({
+        path: OPTIONS.serial.port,
+        baudRate: OPTIONS.serial.baudrate,
+        dataBits: OPTIONS.serial.databits,
+        parity: OPTIONS.serial.parity,
+        stopBits: OPTIONS.serial.stopbits,
+        autoOpen: false,
+        encoding: 'hex'
+    });
+
+    port.on('open', () => {
+        console.log('Successfully opened serial port:', port.path);
+    });
+
+    port.on('close', () => {
+        console.log('Closed serial port:', port.path);
+    });
+
+    port.on('error', (err) => {
+        console.log('Failed to open serial port:', err.message);
+    });
+
+    receiveData(port);
+}
+
+function socketCommunication() {
+    console.log('initializing socket...');
+    const sock = new net.Socket();
+
+    sock.connect(8899, '192.168.1.4', () => {
+        console.log('Connected to socket:', sock.remoteAddress + ':' + sock.remotePort);
+    });
+    
+    sock.on('error', (err) => {
+        console.log(`Socket connection error: ${err.code}`);
+    });
+
+    receiveData(sock);
+}
+
+function receiveData(data) {
+    data.on('data', (data) => {
+        if (!data) {
+            throw new Error('Data not found');
+        }
+
+        parsePacket(data);
+    });
+}
+
+function parsePacket(data) {
+    let delimiter = '';
+
+    // 구분자 설정
+    for (let i = 0; i < data.length - 1; i++) {
+        if (data[i] !== data[i + 1]) {
+            delimiter = data.slice(0, i + 1);
+            break;
+        }
+    }
+
+    if (!delimiter) {
+        console.log('Delimiter not found!');
+    }
+
+    const packetSuffix = data.toString('hex').split(delimiter.toString('hex'))[1];
+    const packet = delimiter.toString('hex') + packetSuffix;
+    if (debugMode == true) createDebuglog(packet);
+
+    for (const [a, b] of Object.entries(WALLPAD_PREFIX)) {
+        if (packet.includes(a) && OPTIONS.wallpad_device) {
+            const device = b[0][packet.slice(b[1][0], b[1][1])];
+            console.log(`Received packets: ${packet}, Wallpad device: ${device}`);
+        } else {
+            console.log(`Received packets: ${packet}`);
+        }
+    };
+}
+
+function createDebuglog(raw) {
+    let writeCount = 0;
+
+    const writeFile = () => {
+        const fileName = OPTIONS.debug_log.file + (writeCount > 0 ? writeCount : '');
+        fs.appendFile(fileName, raw + '\n', (err) => {
+            if (err) throw err;
+        });
+        writeCount++;
+    }
+
+    const writeInterval = setInterval(writeFile, OPTIONS.debug_log.delay * 1000);
+
+    setTimeout(() => {
+        clearInterval(writeInterval);
+        console.log('Packet data saved to file!');
+        if (OPTIONS.debug_save == 'renewal') {
+            fs.appendFile(OPTIONS.debug_log.file, '', (err) => {
+                if (err) throw err;
+                writeFile();
+            });
+        } else if (OPTIONS.debug_save == 'append') {
+            writeFile();
+        }
+    }, OPTIONS.debug_log.time * 1000);
 }
