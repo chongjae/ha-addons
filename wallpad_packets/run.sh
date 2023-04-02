@@ -14,7 +14,7 @@ if [ ! -f "$share_dir/data.js" ]; then
     fi
 fi
 
-echo "INFO: Running WallPad Packets Addon..."
+echo "INFO: Running wallpad packets Addon..."
 cd "$share_dir"
 if ! node data.js; then
     echo "ERROR: Failed to run data.js"
