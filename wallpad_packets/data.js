@@ -1,14 +1,37 @@
-const { SerialPort } = require('serialport')
+const { SerialPort } = require('serialport');
 const net = require('net');
 const fs = require('fs');
-const OPTIONS = require('/data/options.json');  
+const OPTIONS = require('./config.json').options;  
+
+const KOCOM_DEVICE = {
+    "00": "MAIN",
+    "01": "MAIN",
+    "0e": "LIGHT",
+    "2c": "GAS",
+    "33": "DOORLOCK",
+    "36": "THERMOSTAT",
+    "39": "AC",
+    "3b": "OUTLET",
+    "44": "EV",
+    "48": "FAN",
+    "60": "MOTION",
+    //"86": "IGNORE",
+};
+
+const BESTIN_DEVICE = {
+};
+
+const WALLPAD_PREFIX = {
+    "aa55": [KOCOM_DEVICE, [14, 16]],
+    //"02": [BESTIN_DEVICE, [4, 6]]
+};
 
 // 연결 타입 설정
 const connectionType = OPTIONS.connection_type;
 const debugMode = OPTIONS.debug_mode;
 
-if (connectionType === 'serial') serialCommunication();
-else if (connectionType === 'socket') socketCommunication();
+if (connectionType == 'serial') serialCommunication();
+else if (connectionType == 'socket') socketCommunication();
 else throw new Error('Invalid connection type');
 
 if (debugMode) {
@@ -87,10 +110,18 @@ function parsePacket(data) {
         console.log('Delimiter not found!');
     }
 
-    const packets = data.toString('hex').split(delimiter.toString('hex'));
-    if (debugMode === true) createDebuglog(delimiter.toString('hex') + packets[1]);
+    const packetSuffix = data.toString('hex').split(delimiter.toString('hex'))[1];
+    const packet = delimiter.toString('hex') + packetSuffix;
+    if (debugMode == true) createDebuglog(packet);
 
-    console.log(`Received packets: ${delimiter.toString('hex') + packets[1]}`);
+    for (const [a, b] of Object.entries(WALLPAD_PREFIX)) {
+        if (packet.includes(a) && OPTIONS.wallpad_device) {
+            const device = b[0][packet.slice(b[1][0], b[1][1])];
+            console.log(`Received packets: ${packet}, Wallpad device: ${device}`);
+        } else {
+            console.log(`Received packets: ${packet}`);
+        }
+    };
 }
 
 function createDebuglog(raw) {
@@ -109,12 +140,12 @@ function createDebuglog(raw) {
     setTimeout(() => {
         clearInterval(writeInterval);
         console.log('Packet data saved to file!');
-        if (OPTIONS.debug_save === 'renewal') {
+        if (OPTIONS.debug_save == 'renewal') {
             fs.appendFile(OPTIONS.debug_log.file, '', (err) => {
                 if (err) throw err;
                 writeFile();
             });
-        } else if (OPTIONS.debug_save === 'append') {
+        } else if (OPTIONS.debug_save == 'append') {
             writeFile();
         }
     }, OPTIONS.debug_log.time * 1000);
