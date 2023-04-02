@@ -2,12 +2,16 @@
 
 share_dir="/share/packet"
 
-if [ ! -d "$share_dir" ]; then
-    mkdir -p "$share_dir" || exit 1
-fi
-
 if [ ! -f "$share_dir/data.js" ]; then
-    mv /data.js "$share_dir" || exit 1
+    if ! mkdir -p "$share_dir"; then
+        echo "ERROR: Failed to create directory $share_dir"
+        exit 1
+    fi
+
+    if ! mv /data.js "$share_dir"; then
+        echo "ERROR: Failed to move data.js to $share_dir"
+        exit 1
+    fi
 fi
 
 echo "INFO: Running WallPad Packets Addon..."
