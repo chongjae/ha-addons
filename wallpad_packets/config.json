@@ -26,11 +26,11 @@
 			"port": "/dev/ttyUSB0",
 			"baudrate": 9600,
 			"databits": 8,
-			"parity": "none",
+			"parity": "N",
 			"stopbits": 1
 		},
 		"socket": {
-			"address": "192.168.1.1",
+			"address": "192.168.1.4",
 			"port": 8899
 		},
 		"debug_log": {
@@ -48,7 +48,7 @@
 			"port": "str",
 			"baudrate": "int",
 			"databits": "int(5,8)",
-			"parity": "list(none|even|odd|mark|space)",
+			"parity": "list(N|E|O|M|S)",
 			"stopbits": "int(0,3)"
 		},
 		"socket": {
