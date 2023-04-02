@@ -1,4 +1,4 @@
-ARG BUILD_FROM="alpine:latest"
+#ARG BUILD_FROM="alpine:latest"
 ARG BUILD_FROM
 FROM $BUILD_FROM
 
@@ -10,9 +10,11 @@ COPY run.sh data.js /
 # Install requirements for add-on
 RUN apk add --no-cache jq npm make gcc g++ python3 linux-headers udev
 
-WORKDIR /share
+WORKDIR /
 COPY package.json /
 RUN npm install
+
+WORKDIR /share
 
 RUN chmod a+x /run.sh
 
