@@ -8,8 +8,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-with open('config.json') as config_file:
-    OPTIONS = json.load(config_file)['options']
+with open('/data/options.json') as config_file:
+    OPTIONS = json.load(config_file)
 
 KOCOM_DEVICE = {
     "00": "MAIN",
@@ -119,7 +119,7 @@ def parse_packet(packet_data):
             if device is not None:
                 logger.info("{}[{}]".format(packet, device))
             else:
-                logger.info("{}[0x{}]".format(
+                logger.info("{}[Unknown: 0x{}]".format(
                     packet, packet[prefix_info[1][0]: prefix_info[1][1]]))
         else:
             logger.info(packet)
