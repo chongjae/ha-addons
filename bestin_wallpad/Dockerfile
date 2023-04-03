@@ -6,6 +6,7 @@ ENV LANG C.UTF-8
 COPY run.sh bestin.js /
 
 # Install requirements for add-on
+RUN apk update
 RUN apk del make gcc g++ python3 linux-headers udev
 
 WORKDIR /
