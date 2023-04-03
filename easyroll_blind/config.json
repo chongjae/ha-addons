@@ -33,18 +33,18 @@
     } 
   },
   "schema": {
-    "scan_interval": "int",
-    "blind_connection": "int",
+    "scan_interval": "int?",
+    "blind_connection": "int?",
     "server": {
-      "address1": "str",
-      "address2": "str",
-      "address3": "str"
+      "address1": "str?",
+      "address2": "str?",
+      "address3": "str?"
     },
     "mqtt": {
-        "broker": "str",
-        "port": "int",
-        "username": "str",
-        "password": "str"
+        "broker": "str?",
+        "port": "int?",
+        "username": "str?",
+        "password": "str?"
     }
   }
 }
