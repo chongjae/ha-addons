@@ -16,7 +16,7 @@ fi
 
 echo "INFO: Running bestin Addon..."
 cd "$share_dir"
-if ! node bestin.js; then
+if ! node bestin_infancy.js; then
     echo "ERROR: Failed to run bestin_infancy.js"
     exit 1
 fi
