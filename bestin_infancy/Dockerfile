@@ -3,7 +3,7 @@ FROM alpine:latest
 ENV LANG C.UTF-8
 
 # Copy data for add-on
-COPY run.sh bestin.js /
+COPY run.sh bestin_infancy.js /
 
 # Install requirements for add-on
 RUN apk update
