@@ -1,0 +1,16 @@
+FROM alpine:latest
+
+ENV LANG C.UTF-8
+
+# Install requirements for add-on
+RUN apk del make gcc g++ python3 linux-headers udev
+
+WORKDIR /
+COPY package.json /
+RUN npm install
+
+WORKDIR /share
+
+RUN chmod a+x /run.sh
+
+CMD [ "/run.sh" ]
