@@ -28,21 +28,21 @@
     "mqtt": {
         "broker": "192.168.1.10",
         "port": 1883,
-        "username": "harwin",
-        "password": "mosquitto"
+        "username": "",
+        "password": ""
     } 
   },
   "schema": {
-    "scan_interval": "int?",
-    "blind_connection": "int?",
+    "scan_interval": "int",
+    "blind_connection": "int",
     "server": {
-      "address1": "str?",
+      "address1": "str",
       "address2": "str?",
       "address3": "str?"
     },
     "mqtt": {
-        "broker": "str?",
-        "port": "int?",
+        "broker": "str",
+        "port": "int",
         "username": "str?",
         "password": "str?"
     }
