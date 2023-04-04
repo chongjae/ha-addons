@@ -5,10 +5,10 @@
 
 const request = require('request');
 const mqtt = require('mqtt');
-const Options = require('./config.json').options;
+const Options = require('/data/options.json');
 
-const address_array = [];
 let mqtt_discovery = false;
+let address_array = [];
 let previousState = {};
 let value_array;
 for (let i = 0; i < Options.blind_connection; i++) {
@@ -28,9 +28,12 @@ const action_url = `http://{}:20318/action`;
 const command_parameter = {
     'OPEN': 'TU',
     'CLOSE': 'BD',
-    'STOP': 'SS'
+    'STOP': 'SS',
+    'MEMORY1': 'M1',
+    'MEMORY2': 'M2',
+    'MEMORY3': 'M3'
 };
- 
+
 const client = mqtt.connect(`mqtt://${Options.mqtt.broker}`, {
     port: Options.mqtt.port,
     username: Options.mqtt.username,
@@ -54,8 +57,8 @@ client.on('reconnect', () => {
     console.log('INFO     MQTT connection lost. try to reconnect...');
 });
 
-function stateRequest() {
-    for (const [index, address] of Object.entries(address_array)) {
+function positionRequest() {
+    for (const [Index, address] of Object.entries(address_array)) {
         request.get(state_url.replace('{}', address),
             function (error, response, body) {
                 const state = JSON.parse(body);
@@ -67,31 +70,30 @@ function stateRequest() {
                 }
 
                 if (response.statusCode == 200 && state.result == 'success') {
-                    console.log(`INFO     Easyroll Blind state request success: ${state.serial_number}:${state.local_ip}`);
+                    console.log(`INFO     Easyroll Blind state request success: ${state.serial_number}::${state.local_ip}`);
                     console.log(`INFO     Easyroll Blind update to position: ${Math.floor(state.position)}%`);
 
-                    const result = {
+                    const blindInformation = {
                         serial: state.serial_number,
                         ip: state.local_ip,
                         position: String(Math.floor(state.position))
                     };
-                    publishState(result);
+                    blindStateMQTT(blindInformation);
                 }
             });
     }
 }
-function setInterval(socn, func) {
+function positionFuncInterval(socn, func) {
     func();
 
-    return setTimeout(function () { setInterval(socn, func); }, socn);
+    return setTimeout(function () { positionFuncInterval(socn, func); }, socn);
 }
+const serverRequestInterval = Options.scan_interval * 1000;
+positionFuncInterval(serverRequestInterval, positionRequest);
 
-const Interval = Options.scan_interval * 1000;
-setInterval(Interval, stateRequest);
-
-function actionRequest(value, type) {
-    for (const [index, address] of Object.entries(address_array)) {
-        const generalOp = {
+function commandRequest(value, optionType) {
+    for (const [Index, address] of Object.entries(address_array)) {
+        const generalOptions = {
             url: action_url.replace('{}', address),
             headers: {
                 'content-type': 'application/json'
@@ -101,7 +103,7 @@ function actionRequest(value, type) {
                 "command": command_parameter[value]
             })
         };
-        const levelOp = {
+        const levelOptions = {
             url: action_url.replace('{}', address),
             headers: {
                 'content-type': 'application/json'
@@ -109,9 +111,9 @@ function actionRequest(value, type) {
             body: JSON.stringify({
                 "mode": "level",
                 "command": value
-            }) 
+            })
         }
-        request.post(type == 'generalOp' ? generalOp : levelOp, function (error, response, body) {
+        request.post(optionType == 'generalOption' ? generalOptions : levelOptions, function (error, response, body) {
             const state = JSON.parse(body);
 
             if (error || state.result != 'success') {
@@ -127,21 +129,21 @@ function actionRequest(value, type) {
     }
 }
 
-function publishState(state) {
-    var position;
+function blindStateMQTT(state) {
+    var action;
     if (state.position == 100) {
-        position = 'closed';
+        action = 'closed';
     } else if (state.position < 100 && !['OPEN', 'CLOSE', 'STOP'].includes(value_array)) {
-        position = 'open';
+        action = 'open';
     } else if (value_array == 'CLOSE') {
-        position = 'closing';
+        action = 'closing';
     } else if (value_array == 'OPEN') {
-        position = 'opening';
+        action = 'opening';
     } else if (value_array == 'STOP') {
-        position = 'stopped';
+        action = 'stopped';
     }
 
-    if (previousState.serial === state.serial && previousState.position === state.position) { 
+    if (previousState.serial === state.serial && previousState.position === state.position) {
         //console.log(`Skipping publish to ${topic} because position hasn't changed.`);
         return;
     }
@@ -149,11 +151,11 @@ function publishState(state) {
     if (previousState = '{}') {
         previousState = state;
     }
-    discovery(state);
+    MqttDiscovery(state);
 
-    const topics = [[`Inoshade/${state.serial}/percent/state`, state.position], [`Inoshade/${state.serial}/position/state`, position]];
-    for (const [index, topic] of Object.entries(topics)) { 
-        if (mqtt_discovery !== true) { 
+    const topics = [[`Inoshade/${state.serial}/percent/state`, state.position], [`Inoshade/${state.serial}/position/state`, action]];
+    for (const [Index, topic] of Object.entries(topics)) {
+        if (mqtt_discovery !== true) {
             console.log(`INFO     Waiting.. MQTT Connected`)
             return;
         }
@@ -163,9 +165,9 @@ function publishState(state) {
     }
 }
 
-function discovery(state) {
-    var topic = `homeassistant/cover/Inoshade/${state.serial}/config`;
-    var payload = {
+function MqttDiscovery(state) {
+    var cover_topic = `homeassistant/cover/Inoshade/${state.serial}/config`;
+    var cover_payload = {
         name: `Inoshade-${state.ip.split(':')[0]}`,
         cmd_t: `Inoshade/${state.serial}/mode/command`,
         stat_t: `Inoshade/${state.serial}/position/state`,
@@ -182,35 +184,50 @@ function discovery(state) {
             sw: "harwin1/ha-addons/easyroll_blind",
         }
     }
+    console.log(`INFO     Add new easyroll-blind: ${cover_topic}`);
+    client.publish(cover_topic, JSON.stringify(cover_payload), { retain: true });
 
-    if (mqtt_discovery == false) {
-        console.log(`INFO     Add new easyroll-blind: ${topic}`);
+    for (const M of ['1', '2', '3']) {
+        var button_topic = `homeassistant/button/Inoshade/${state.serial}-M${M}/config`;
+        var button_payload = {
+            name: `Inoshade-${state.ip.split(':')[0]}-M${M}`,
+            cmd_t: `Inoshade/${state.serial}/MEMORY${M}/command`,
+            uniq_id: `Inoshade-${state.ip.split(':')[0]}-M${M}`,
+            device: {
+                ids: "easyroll_blind",
+                name: "easyroll_blind",
+                mf: "Inoshade",
+                mdl: "Inoshade-easyroll",
+                sw: "harwin1/ha-addons/easyroll_blind",
+            }
+        }
 
-        client.publish(topic, JSON.stringify(payload), { retain: true });
-        mqtt_discovery = true;
-    } else {
-        console.log(`WARNING  Failed to add new easyroll-blind: ${topic}`);
-        setTimeout(() => { mqtt_discovery = false, console.log(`INFO     Retrying.. Add easyroll blind: ${topic}`) }, 5000);
+        console.log(`INFO     Add new easyroll-blind: ${button_topic}`);
+        client.publish(button_topic, JSON.stringify(button_payload), { retain: true });
     }
+    mqtt_discovery = true;
 }
 
 client.on('message', (topic, message) => {
     var topics = topic.split('/');
-    var value = message.toString(); 
+    var value = message.toString();
 
     if (topics[0] !== 'Inoshade') {
         console.log(`ERROR    Invalid topic prefix: ${topics[0]}`);
         return;
-    } 
+    }
 
     if (topics[2] == 'mode') {
         value_array = value;
         console.log(`INFO     Easyroll Blind general command: ${topics[1]}::${value}`);
-
-        actionRequest(value, 'generalOp');
+        commandRequest(value, 'generalOption');
     } else if (topics[2] == 'percent') {
         console.log(`INFO     Easyroll Blind level command: ${topics[1]}::${value}%`);
-
-        actionRequest(value, 'levelOp');
+        commandRequest(value, 'levelOption');
+    } else if (topics[2].includes('MEMORY')) {
+        console.log(`INFO     Easyroll Blind memory command: ${topics[1]}::${value}[${topics[2]}]`);
+        commandRequest(topics[2], 'generalOption');
+    } else {
+        console.log(`ERROR    Unknown easyroll blind command topic: ${topics[2]}`);
     }
 });
