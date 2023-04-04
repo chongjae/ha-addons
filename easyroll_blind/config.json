@@ -22,8 +22,8 @@
     "blind_connection": 1,
     "server": {
       "address1": "192.168.1.16",
-      "address2": "",
-      "address3": ""
+      "address2": "192.168.1.1",
+      "address3": "192.168.1.1"
     },
     "mqtt": {
         "broker": "192.168.1.10",
@@ -36,7 +36,7 @@
     "scan_interval": "int",
     "blind_connection": "int",
     "server": {
-      "address1": "str",
+      "address1": "str?",
       "address2": "str?",
       "address3": "str?"
     },
