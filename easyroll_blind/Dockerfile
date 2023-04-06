@@ -3,7 +3,7 @@ FROM alpine:latest
 ENV LANG C.UTF-8
 
 # Copy data for add-on
-COPY run.sh easyroll_blind.js /
+COPY run.sh easyroll_blind.js ./
 
 # Install requirements for add-on
 RUN apk update
