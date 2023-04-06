@@ -1,33 +1,20 @@
-# Use a specific version of Alpine
-FROM alpine:3.15.0 AS base
+FROM alpine:latest
 
 ENV LANG C.UTF-8
 
-# Install build dependencies
-RUN apk add --no-cache make gcc g++ python3 linux-headers udev
+# Copy data for add-on
+COPY run.sh easyroll_blind.js /
 
-# Create a directory for the application
-WORKDIR /app
+# Install requirements for add-on
+RUN apk update
+RUN apk add --no-cache jq npm make gcc g++ python3 linux-headers udev
 
-# Copy the package.json file and install dependencies
-COPY package.json .
-RUN npm install --production
+WORKDIR /
+COPY package.json /
+RUN npm install
 
-# Copy the application code
-COPY easyroll_blind.js .
-
-# Use a smaller image for the final stage
-FROM alpine:3.15.0
-
-# Copy the built application and script from the previous stage
-COPY --from=base /app /app
-COPY run.sh /
-
-# Make the script executable
-RUN chmod a+x /run.sh
-
-# Set the working directory to /share
 WORKDIR /share
 
-# Run the script when the container starts
-CMD ["/run.sh"]
+RUN chmod a+x /run.sh
+
+CMD [ "/run.sh" ]
