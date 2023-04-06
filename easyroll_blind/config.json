@@ -1,5 +1,5 @@
 {
-  "name": "easyroll blind",
+  "name": "Easyroll Blind",
   "version": "1.0.0",
   "slug": "Inoshade",
   "description": "Add-on for Easyroll Blind",
@@ -21,15 +21,15 @@
     "scan_interval": 60,
     "blind_connection": 1,
     "server": {
-      "address1": "192.168.1.16",
-      "address2": "192.168.1.1",
-      "address3": "192.168.1.1"
+      "address1": "192.168.1.1",
+      "address2": "",
+      "address3": ""
     },
     "mqtt": {
-        "broker": "192.168.1.10",
+        "broker": "192.168.1.1",
         "port": 1883,
-        "username": "username",
-        "password": "password"
+        "username": "",
+        "password": ""
     } 
   },
   "schema": {
