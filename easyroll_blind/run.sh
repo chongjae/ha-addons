@@ -1,22 +1,23 @@
 #!/bin/bash
 
 share_dir="/share/Inoshade"
+js_file="easyroll_blind.js"
 
-if [ ! -f "$share_dir/easyroll_blind.js" ]; then
+if [ ! -f "$share_dir/$js_file" ]; then
     if ! mkdir -p "$share_dir"; then
         echo "ERROR: Failed to create directory $share_dir"
         exit 1
     fi
 
-    if ! mv /easyroll_blind.js "$share_dir"; then
-        echo "ERROR: Failed to move easyroll_blind.js to $share_dir"
+    if ! mv "$js_file" "$share_dir"; then
+        echo "ERROR: Failed to move $js_file to $share_dir"
         exit 1
     fi
 fi
 
 echo "INFO: Running easyroll_blind Addon..."
 cd "$share_dir"
-if ! node easyroll_blind.js; then
-    echo "ERROR: Failed to run easyroll_blind.js"
+if ! node "$js_file"; then
+    echo "ERROR: Failed to run $js_file"
     exit 1
 fi
