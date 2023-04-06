@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+set -e
 
 share_dir="/share/Inoshade"
 js_file="easyroll_blind.js"
@@ -9,7 +11,7 @@ if [ ! -f "$share_dir/$js_file" ]; then
         exit 1
     fi
 
-    if ! mv "$js_file" "$share_dir"; then
+    if ! mv "/$js_file" "$share_dir"; then
         echo "ERROR: Failed to move $js_file to $share_dir"
         exit 1
     fi
