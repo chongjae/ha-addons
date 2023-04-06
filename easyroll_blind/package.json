@@ -1,5 +1,5 @@
 {
-  "name": "my_package",
+  "name": "npm package",
   "description": "",
   "version": "1.0.0",
   "scripts": {
@@ -12,5 +12,5 @@
     "mqtt": "^4.3.7",
     "serialport": "^10.5.0"
   },
-  "homepage": "https://github.com/monatheoctocat/my_package"
+  "homepage": ""
 }
