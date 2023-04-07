@@ -1,5 +1,5 @@
-# Use base image with s6-overlay as init system
-FROM ghcr.io/linuxserver/baseimage-alpine:3.14
+ARG BUILD_FROM
+FROM $BUILD_FROM
 
 ENV LANG C.UTF-8
 
