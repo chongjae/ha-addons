@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SHARE_DIR=/share/Inoshade
+SHARE_DIR=/share/inoshade
 
 if [ ! -f $SHARE_DIR/easyroll_blind.py ]; then
     mkdir -p $SHARE_DIR
