@@ -6,8 +6,8 @@ import json
 import time
 import threading
 
-options_file = open('./config.json',)
-options = json.load(options_file)['options']
+options_file = open('/data/options.json',)
+options = json.load(options_file)
 
 logger = logging.getLogger(__name__)
 
