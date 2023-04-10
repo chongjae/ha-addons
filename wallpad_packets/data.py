@@ -45,14 +45,14 @@ def init_logger():
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
-
+'''
 if debug_mode:
     logger.warning(
         f"Debug mode enabled packet information is now stored in the {OPTIONS['debug_log']['file']} path")
     if not os.path.exists(OPTIONS['debug_log']['file']):
         open(OPTIONS['debug_log']['file'], 'w').close()
         logger.info('Debug log file created')
-
+'''
 
 def serial_communication():
     logger.info('initializing serial...')
@@ -109,8 +109,8 @@ def parse_packet(packet_data):
     packet_suffix = packet_data.hex().split(delimiter_hex)[1]
     packet = delimiter_hex + packet_suffix
 
-    if debug_mode:
-        create_debug_log(packet)
+    #if debug_mode:
+    #    create_debug_log(packet)
 
     for prefix, prefix_info in WALLPAD_PREFIX.items():
         if prefix.encode() in prefix.encode() and OPTIONS['wallpad_device']:
@@ -124,7 +124,7 @@ def parse_packet(packet_data):
         else:
             logger.info(packet)
 
-
+''' file storage bug needs to be fixed
 def create_debug_log(raw_packet):
     write_count = 0
 
@@ -166,6 +166,7 @@ def create_debug_log(raw_packet):
             write_file()
         elif OPTIONS["debug_save"] == "append":
             write_file()
+'''
 
 
 if __name__ == '__main__':
