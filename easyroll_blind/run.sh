@@ -1,25 +1,12 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
-set -e
+SHARE_DIR=/share/Inoshade
 
-share_dir="/share/Inoshade"
-js_file="easyroll_blind.js"
-
-if [ ! -f "$share_dir/$js_file" ]; then
-    if ! mkdir -p "$share_dir"; then
-        echo "ERROR: Failed to create directory $share_dir"
-        exit 1
-    fi
-
-    if ! mv "/$js_file" "$share_dir"; then
-        echo "ERROR: Failed to move $js_file to $share_dir"
-        exit 1
-    fi
+if [ ! -f $SHARE_DIR/easyroll_blind.py ]; then
+    mkdir -p $SHARE_DIR
+    mv /easyroll_blind.py $SHARE_DIR
 fi
 
-echo "INFO: Running easyroll_blind Addon..."
-cd "$share_dir"
-if ! node "$js_file"; then
-    echo "ERROR: Failed to run $js_file"
-    exit 1
-fi
+echo "INFO: Running Easyroll Blind Addon..."
+cd $SHARE_DIR
+python3 $SHARE_DIR/easyroll_blind.py
