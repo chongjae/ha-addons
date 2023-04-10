@@ -21,15 +21,15 @@
     "scan_interval": 60,
     "blind_connection": 1,
     "server": {
-      "address1": "192.168.1.16",
+      "address1": "192.168.1.1",
       "address2": "",
       "address3": ""
     },
     "mqtt": {
-        "broker": "192.168.1.10",
+        "broker": "192.168.1.1",
         "port": 1883,
-        "username": "harwin",
-        "password": "mosquitto",
+        "username": "",
+        "password": "",
         "login": true
     } 
   },
