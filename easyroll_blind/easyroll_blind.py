@@ -46,6 +46,8 @@ command_parameter = {
     'OPEN': 'TU',
     'CLOSE': 'BD',
     'STOP': 'SS',
+    'SQUAREUP': 'SU',
+    'SQUAREDOWN': 'SD'
 }
 
 
@@ -111,6 +113,7 @@ def mqtt_on_message(mqtt, userdata, msg):
         blind_command_request(payload, 'level')
     elif topics[2] in ['M1', 'M2', 'M3']:
         blind_command_request(payload, 'general')
+    elif topics[2] == ''
 
 
 def updata_blind_position():
