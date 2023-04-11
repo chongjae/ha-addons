@@ -43,11 +43,11 @@ state_url = 'http://{}:20318/lstinfo'
 action_url = 'http://{}:20318/action'
 
 command_parameter = {
-    'OPEN': 'TU',
-    'CLOSE': 'BD',
-    'STOP': 'SS',
-    'SQUAREUP': 'SU',
-    'SQUAREDOWN': 'SD'
+    'OPEN': 'TU',  # 최상단 올림
+    'CLOSE': 'BD',  # 최하단 내림
+    'STOP': 'SS',  # 정지
+    'SQUAREUP': 'SU',  # 한 칸 올림
+    'SQUAREDOWN': 'SD'  # 한 칸 내림
 }
 
 
@@ -111,9 +111,10 @@ def mqtt_on_message(mqtt, userdata, msg):
         blind_command_request(payload, 'general')
     elif topics[2] == 'percent':
         blind_command_request(payload, 'level')
+    elif topics[2] in ['SQUAREUP', 'SQUAREDOWN']:
+        blind_command_request(payload, 'general')
     elif topics[2] in ['M1', 'M2', 'M3']:
         blind_command_request(payload, 'general')
-    elif topics[2] == ''
 
 
 def updata_blind_position():
@@ -183,8 +184,8 @@ def mqtt_discovery(state):
         "pos_clsd": 100,
         "uniq_id": f"Inoshade-{state['ip'].split(':')[0]}",
         "device": {
-            "ids": "easyroll_blind",
-            "name": "easyroll_blind",
+            "ids": f"easyroll blind-{state['ip'].split(':')[0]}",
+            "name": f"easyroll blind-{state['ip'].split(':')[0]}",
             "mf": "Inoshade",
             "mdl": "Inoshade-easyroll",
             "sw": "harwin1/ha-addons/easyroll_blind",
@@ -199,14 +200,30 @@ def mqtt_discovery(state):
             "cmd_t": f"Inoshade/{state['serial']}/{memory.lower()}/command",
             "uniq_id": f"Inoshade-{state['ip'].split(':')[0]}-{memory}",
             "device": {
-                "ids": "easyroll_blind",
-                "name": "easyroll_blind",
+                "ids": f"easyroll blind-{state['ip'].split(':')[0]}",
+                "name": f"easyroll blind-{state['ip'].split(':')[0]}",
                 "mf": "Inoshade",
                 "mdl": "Inoshade-easyroll",
                 "sw": "harwin1/ha-addons/easyroll_blind",
             }
         }
         mqtt_config_topics.append([button_topic, button_payload])
+
+    for square in ['SQUAREUP', 'SQUAREDOWN']:
+        square_topic = f"homeassistant/button/easyroll/{state['serial']}-{square.lower()}/config"
+        square_payload = {
+            "name": f"Inoshade-{state['ip'].split(':')[0]}-{square}",
+            "cmd_t": f"Inoshade/{state['serial']}/{square.lower()}/command",
+            "uniq_id": f"Inoshade-{state['ip'].split(':')[0]}-{square}",
+            "device": {
+                "ids": f"easyroll blind-{state['ip'].split(':')[0]}",
+                "name": f"easyroll blind-{state['ip'].split(':')[0]}",
+                "mf": "Inoshade",
+                "mdl": "Inoshade-easyroll",
+                "sw": "harwin1/ha-addons/easyroll_blind",
+            }
+        }
+        mqtt_config_topics.append([square_topic, square_payload])
 
     for topic, payload in mqtt_config_topics:
         logger.info('add new blind: {}'.format(topic))
