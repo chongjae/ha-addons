@@ -7,6 +7,6 @@ if [ ! -f $SHARE_DIR/data.py ]; then
     mv /data.py $SHARE_DIR
 fi
 
-echo "INFO: Running wallpad packets Addon..."
+echo "INFO: Running Wallpad RS485 Packet Raw Addon..."
 cd $SHARE_DIR
-python3 $SHARE_DIR/data.py
+python3 data.py
