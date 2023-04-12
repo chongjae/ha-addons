@@ -9,4 +9,4 @@ fi
 
 echo "INFO: Running Easyroll Blind Addon..."
 cd $SHARE_DIR
-python3 easyroll_blind.py
+python3 $SHARE_DIR/easyroll_blind.py
