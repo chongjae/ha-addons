@@ -17,7 +17,7 @@ const xml2js = require('xml2js');
 
 // 커스텀 파서
 const Transform = require('stream').Transform;
-const CONFIG = require('./config.json');
+const CONFIG = require('/data/options.json');
 
 // 로그 표시 
 const log = (...args) => console.log('[' + (new Date()).toLocaleString() + ']', 'INFO     ', args.join(' '));
