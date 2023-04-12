@@ -9,8 +9,9 @@ COPY run.sh easyroll_blind.py /
 WORKDIR /share
 
 # Install requirements for add-on
-RUN apt-get update
-RUN python3 -m pip install requests
+RUN apt-get update && apt-get -y install jq
+RUN python3 -m pip install pyserial && \
+        python3 -m pip install paho-mqtt
 
 RUN chmod a+x /run.sh
 
