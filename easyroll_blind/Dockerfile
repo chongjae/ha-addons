@@ -3,10 +3,10 @@ FROM python:3
 
 ENV LANG C.UTF-8
 
+WORKDIR /share
+
 # Copy data for add-on
 COPY run.sh easyroll_blind.py /
-
-WORKDIR /share
 
 # Install requirements for add-on
 RUN apt-get update && apt-get -y install jq
