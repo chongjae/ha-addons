@@ -18,11 +18,8 @@ const xml2js = require('xml2js');
 // 커스텀 파서
 const Transform = require('stream').Transform;
 const CONFIG = require('/data/options.json');
-
-// 로그 표시 
-const log = (...args) => console.log('[' + (new Date()).toLocaleString() + ']', 'INFO     ', args.join(' '));
-const warn = (...args) => console.log('[' + (new Date()).toLocaleString() + ']', 'WARNING  ', args.join(' '));
-const error = (...args) => console.log('[' + (new Date()).toLocaleString() + ']', 'ERROR    ', args.join(' '));
+if (CONFIG.log.debug_mode) file_path = CONFIG.log.file_path;
+const log = require('simple-node-logger').createSimpleLogger(file_path);
 
 const MSG_INFO = [
     /////////////////////////////////////////////////////////////////////////////
@@ -269,27 +266,27 @@ class rs485 {
         });
 
         client.on('connect', () => {
-            log('MQTT connection successful!');
+            log.info('MQTT connection successful!');
             this._deviceReady = true; // mqtt 연결 성공하면 장치 준비 완료
             const topics = ['bestin/+/+/+/command', 'homeassistant/status'];
             topics.forEach(topic => {
                 client.subscribe(topic, (err) => {
                     if (err) {
-                        error(`failed to subscribe to ${topic}`);
+                        log.error(`failed to subscribe to ${topic}`);
                     }
                 });
             });
         });
 
         client.on('error', (err) => {
-            error(`MQTT connection error: ${err}`);
+            log.error(`MQTT connection error: ${err}`);
             this._deviceReady = false;
         });
 
         client.on('reconnect', () => {
-            warn('MQTT connection lost. try to reconnect...');
+            log.warn('MQTT connection lost. try to reconnect...');
         });
-        log('initializing mqtt...');
+        log.info('initializing mqtt...');
 
         // ha에서 mqtt로 제어 명령 수신
         client.on('message', this.mqttCommand.bind(this));
@@ -298,7 +295,7 @@ class rs485 {
 
     mqttCommand(topic, message) {
         if (!this._deviceReady) {
-            warn('MQTT is not ready yet');
+            log.warn('MQTT is not ready yet');
             return;
         }
         const topics = topic.split("/");
@@ -324,7 +321,7 @@ class rs485 {
         //console.log(typeof (propertyValue));
 
         if (typeof (propertyValue) !== 'number') {
-            log(`publish mqtt: ${topic} = ${propertyValue}`);
+            log.info(`publish mqtt: ${topic} = ${propertyValue}`);
         }
         this._mqttClient.publish(topic, String(propertyValue), { retain: true });
     }
@@ -508,46 +505,41 @@ class rs485 {
     }
 
     createConnection(options, name) {
-        switch (options.type) {
-            case 'serial':
-                this._connection = new SerialPort({
-                    path: options.ser_path,
-                    baudRate: 9600,
-                    dataBits: 8,
-                    parity: 'none',
-                    stopBits: 1,
-                    autoOpen: false,
-                    encoding: 'hex'
-                });
+        log.info(`initializing ${options.type} :: ${name}...`);
+        if (options.type == 'serial') {
+            this._connection = new SerialPort({
+                path: options.ser_path,
+                baudRate: 9600,
+                dataBits: 8,
+                parity: 'none',
+                stopBits: 1,
+                autoOpen: false,
+                encoding: 'hex'
+            });
 
-                this._connection.pipe(new CustomParser()).on('data', this.packetHandle.bind(this));
-                this._connection.on('open', () => {
-                    log(`successfully opened ${name} port: ${options.ser_path}`);
-                });
-                this._connection.on('close', () => {
-                    warn(`closed ${name} port: ${options.ser_path}`);
-                });
-                this._connection.open((err) => {
-                    if (err) {
-                        error(`failed to open ${name} port: ${err.message}`);
-                    }
-                });
-                break;
-            case 'socket':
-                this._connection = new net.Socket();
-                this._connection.connect(options.port, options.address, () => {
-                    log(`successfully connected to ${name}  [${options.address}:${options.port}]`);
-                });
-                this._connection.on('error', (err) => {
-                    error(`connection error ${err.code}::${name.toUpperCase()}. try to reconnect...`);
-                    this._connection.connect(options.port, options.address);
-                    // 연결 애러 발생시 reconnect
-                });
-                this._connection.pipe(new CustomParser()).on('data', this.packetHandle.bind(this));
-                break;
-            default:
-                error(`Invalid connection type: ${options.type}`);
-                return;
+            this._connection.pipe(new CustomParser()).on('data', this.packetHandle.bind(this));
+            this._connection.on('open', () => {
+                log.info(`successfully opened ${name} port: ${options.ser_path}`);
+            });
+            this._connection.on('close', () => {
+                log.warn(`closed ${name} port: ${options.ser_path}`);
+            });
+            this._connection.open((err) => {
+                if (err) {
+                    log.error(`failed to open ${name} port: ${err.message}`);
+                }
+            });
+        } else if (options.type == 'socket') {
+            this._connection = new net.Socket();
+            this._connection.connect(options.port, options.address, () => {
+                log.info(`successfully connected to ${name}  [${options.address}:${options.port}]`);
+            });
+            this._connection.on('error', (err) => {
+                log.error(`connection error ${err.code}::${name.toUpperCase()}. try to reconnect...`);
+                this._connection.connect(options.port, options.address);
+                // 연결 애러 발생시 reconnect
+            });
+            this._connection.pipe(new CustomParser()).on('data', this.packetHandle.bind(this));
         }
         return this._connection;
     }
@@ -580,15 +572,15 @@ class rs485 {
         receivedMsg.timeslot = this._lastReceive - this._syncTime;
 
         if (Boolean(receivedMsg.checksum) === false) {
-            error(`checksum error: ${receivedMsg.code}, ${this.generateCheckSum(receivedMsg.codeHex)}`);
+            log.error(`checksum error: ${receivedMsg.code}, ${this.generateCheckSum(receivedMsg.codeHex)}`);
             return;
         }
 
-        const PT2Byte = [0x81, 0x82, 0x83];
-        const PT3Byte = [0x81, 0x92];
-        const foundIdx = this._serialCmdQueue.findIndex(e => e.cmdHex[1] == packet[1] && (PT2Byte.includes(packet[2]) || PT3Byte.includes(packet[3])));
+        const BYTE2 = [0x81, 0x82, 0x83];
+        const BYTE3 = [0x81, 0x92];
+        const foundIdx = this._serialCmdQueue.findIndex(e => e.cmdHex[1] == packet[1] && (BYTE2.includes(packet[2]) || BYTE3.includes(packet[3])));
         if (foundIdx > -1) {
-            log(`Success command: ${this._serialCmdQueue[foundIdx].device}`);
+            log.info(`Success command: ${this._serialCmdQueue[foundIdx].device}`);
             const { callback, device } = this._serialCmdQueue[foundIdx];
             if (callback) callback(receivedMsg);
             this._serialCmdQueue.splice(foundIdx, 1);
@@ -617,7 +609,7 @@ class rs485 {
         };
 
         this._serialCmdQueue.push(serialCmd);
-        log(`send to device: ${cmdHex.toString('hex')}`);
+        log.info(`send to device: ${cmdHex.toString('hex')}`);
 
         const elapsed = serialCmd.sentTime - this._syncTime;
         const delay = (elapsed < 100) ? 100 - elapsed : 0;
@@ -640,13 +632,13 @@ class rs485 {
         }[serialCmd.device];
 
         if (!writeHandle) {
-            error(`Invalid device: ${serialCmd.device}`);
+            log.error(`Invalid device: ${serialCmd.device}`);
             return;
         }
 
         writeHandle.write(serialCmd.cmdHex, (err) => {
             if (err) {
-                error('Send Error:', err.message);
+                log.error('Send Error:', err.message);
             }
         });
 
@@ -655,7 +647,7 @@ class rs485 {
             this._serialCmdQueue.push(serialCmd);
             setTimeout(() => this.processCommand(serialCmd), CONFIG.rs485.retry_delay);
         } else {
-            error(`maximum retries ${CONFIG.rs485.retry_count} times exceeded for command`);
+            log.error(`maximum retries ${CONFIG.rs485.retry_count} times exceeded for command`);
             if (serialCmd.callback) {
                 serialCmd.callback.call(this);
             }
@@ -673,15 +665,15 @@ class rs485 {
     }
 
     setCommandProperty(device, roomIdx, propertyName, propertyValue, callback) {
-        log(`recv. from HA: ${this._mqttPrefix}/${device}/${roomIdx}/${propertyName}/command = ${propertyValue}`);
+        log.info(`recv. from HA: ${this._mqttPrefix}/${device}/${roomIdx}/${propertyName}/command = ${propertyValue}`);
 
         const msgInfo = MSG_INFO.find(e => e.setPropertyToMsg && e.device === device);
         if (!msgInfo) {
-            warn(`unknown device: ${device}`);
+            log.warn(`unknown device: ${device}`);
             return;
         }
         if (msgInfo.device === 'gas' && propertyValue === 'on') {
-            warn('The gas valve only supports locking');
+            log.warn('The gas valve only supports locking');
             return;
         }
 
@@ -729,7 +721,7 @@ class rs485 {
         if (enable) {
             this.IparkLoginRequest('none');
         } else {
-            log('I-PARK server disabled');
+            log.info('I-PARK server disabled');
         }
     }
 
@@ -738,23 +730,23 @@ class rs485 {
         const login = `http://${CONFIG.ipark_server.address}/webapp/data/getLoginWebApp.php?device=WA&login_ide=${CONFIG.ipark_server.username}&login_pwd=${CONFIG.ipark_server.password}`;
         request.get(login, (error, response, body) => {
             if (error) {
-                warn(`I-PARK server login failed with error code: ${error}`);
+                log.warn(`I-PARK server login failed with error code: ${error}`);
                 return;
             }
 
             const parse = JSON.parse(body);
             if (response.statusCode === 200 && parse.ret === 'success') {
                 if (loginType === 'none') {
-                    log('I-PARK server login successful');
+                    log.info('I-PARK server login successful');
                     that.reloginRequest(false);
                     that.CookieInfo(response, 'none');
                 } else if (loginType === 'relogin') {
-                    log('I-PARK server session refresh successful');
+                    log.info('I-PARK server session refresh successful');
                     that.reloginRequest(true);
                     that.CookieInfo(response, 'relogin');
                 }
             } else {
-                log(`I-PARK server login failed: ${parse.ret}`);
+                log.info(`I-PARK server login failed: ${parse.ret}`);
             }
         });
     }
@@ -763,11 +755,11 @@ class rs485 {
         const that = this;
         let intervalId = null;
         function refresh() {
-            log('Start I-Park server refresh...');
+            log.info('Start I-Park server refresh...');
             that.IparkLoginRequest('relogin');
         }
         if (boolean === true) {
-            log('finish I-Park server refresh');
+            log.info('finish I-Park server refresh');
             clearInterval(intervalId);
         } else {
             intervalId = setInterval(refresh, 1200000);
@@ -799,15 +791,15 @@ class rs485 {
         this._cookieInfo = cookieJson;
 
         if (!this._cookieInfo) {
-            error('unable to assign parsed login cookie information to cookieInfo from server');
+            log.error('unable to assign parsed login cookie information to cookieInfo from server');
             return;
         }
 
         if (type === 'none') {
-            log(`Success. login cookie information: ${JSON.stringify(this._cookieInfo)}`);
+            log.info(`Success. login cookie information: ${JSON.stringify(this._cookieInfo)}`);
             this.selectServerDevice();
         } else if (type === 'relogin') {
-            log('successful refresh of session cookie information');
+            log.info('successful refresh of session cookie information');
         }
     }
 
@@ -830,12 +822,12 @@ class rs485 {
                         break;
                 }
             }
-            log(`I-Park server selected devices: ${deviceName}::${deviceBool}`);
+            log.info(`I-Park server selected devices: ${deviceName}::${deviceBool}`);
         }
 
         functionsToCall.forEach((func) => func.call(this));
         setInterval(() => {
-            functionsToCall.forEach((func) => func.call(this)); log('Refresh I-Park server device status connection');
+            functionsToCall.forEach((func) => func.call(this)); log.info('Refresh I-Park server device status connection');
         }, CONFIG.server_scan * 1000);
     }
 
@@ -969,13 +961,13 @@ class rs485 {
                     case 'light':
                         xml2js.parseString(body, (err, result) => {
                             if (err) {
-                                warn(`xml parsing failed with error: ${err}`);
+                                log.warn(`xml parsing failed with error: ${err}`);
                                 return;
                             }
                             if (result) {
                                 const statusInfo = result.imap.service[0].status_info;
                                 if (!statusInfo) {
-                                    warn('json parsing failed: body property not found');
+                                    log.warn('json parsing failed: body property not found');
                                     return;
                                 }
                                 try {
@@ -986,7 +978,7 @@ class rs485 {
                                         this.updateProperty('light', 'living', unitNum, unitStatus);
                                     });
                                 } catch (e) {
-                                    warn(`xml parsing failed with error: ${e}`);
+                                    log.warn(`xml parsing failed with error: ${e}`);
                                 }
                             }
                         });
@@ -995,7 +987,7 @@ class rs485 {
                         try {
                             const vehicle_parse = JSON.parse(body);
                             if (!vehicle_parse[0]) {
-                                warn('json parsing failed: body property not found');
+                                log.warn('json parsing failed: body property not found');
                                 return;
                             }
                             const vehicle_result = {
@@ -1005,7 +997,7 @@ class rs485 {
                             }
                             this.updateProperty('vehicle', vehicle_parse[0].rownum, 'info', JSON.stringify(vehicle_result));
                         } catch (e) {
-                            warn(`json parsing failed with error: ${e}`);
+                            log.warn(`json parsing failed with error: ${e}`);
                         }
                         break;
                     case 'delivery':
@@ -1022,12 +1014,12 @@ class rs485 {
                             }
                             this.updateProperty('delivery', delivery_parse[0].rownum, 'info', JSON.stringify(delivery_result));
                         } catch (e) {
-                            warn(`json parsing failed with error: ${e}`);
+                            log.warn(`json parsing failed with error: ${e}`);
                         }
                         break;
                 }
             } else {
-                warn(`request failed with error: ${error}`);
+                log.warn(`request failed with error: ${error}`);
             }
         });
     }
@@ -1085,10 +1077,10 @@ class rs485 {
                         }
                     }
                 } catch (e) {
-                    warn(`json parsing failed with error: ${e}`);
+                    log.warn(`json parsing failed with error: ${e}`);
                 }
             } else {
-                warn(`request failed with error: ${error}`);
+                log.warn(`request failed with error: ${error}`);
             }
         });
     }
@@ -1098,13 +1090,13 @@ class rs485 {
             if (response.statusCode === 200) {
                 try {
                     let unitNum = num.replace(/switch/g, 'power');
-                    log(`request Successful: ${unitNum} ${act}`);
+                    log.info(`request Successful: ${unitNum} ${act}`);
                     this.mqttClientUpdate('light', 'living', unitNum, act);
                 } catch (e) {
-                    warn(`request failed light with error: ${e}`);
+                    log.warn(`request failed light with error: ${e}`);
                 }
             } else {
-                warn(`request failed with error: ${error}`);
+                log.warn(`request failed with error: ${error}`);
             }
         });
     }
