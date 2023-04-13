@@ -47,6 +47,10 @@
       "delivery": true,
       "energy": false
     },
+    "log": {
+      "debug_mode": false,
+      "file_path": "/share/bestin/bestin_wallpad.log"
+    },
     "mqtt": {
       "broker": "192.168.1.1",
       "port": 1883,
@@ -85,6 +89,10 @@
       "vehicle": "bool",
       "delivery": "bool",
       "energy": "bool"
+    },
+    "log": {
+      "debug_mode": "bool",
+      "file_path": "str"
     },
     "mqtt": {
       "broker": "str",
