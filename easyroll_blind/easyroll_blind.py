@@ -176,10 +176,10 @@ def mqtt_discovery(state):
     cover_topic = f"homeassistant/cover/easyroll/{state['serial']}/config"
     cover_payload = {
         "name": f"Inoshade-{state['ip'].split(':')[0]}",
-        "cmd_t": f"Inoshade/{state['serial']}/mode/command",
-        "stat_t": f"Inoshade/{state['serial']}/position/state",
-        "pos_t": f"Inoshade/{state['serial']}/percent/state",
-        "set_pos_t": f"Inoshade/{state['serial']}/percent/command",
+        "cmd_t": f"easyroll/{state['serial']}/mode/command",
+        "stat_t": f"easyroll/{state['serial']}/position/state",
+        "pos_t": f"easyroll/{state['serial']}/percent/state",
+        "set_pos_t": f"easyroll/{state['serial']}/percent/command",
         "pos_open": 0,
         "pos_clsd": 100,
         "uniq_id": f"Inoshade-{state['ip'].split(':')[0]}",
@@ -197,7 +197,7 @@ def mqtt_discovery(state):
         button_topic = f"homeassistant/button/easyroll/{state['serial']}-{memory.lower()}/config"
         button_payload = {
             "name": f"Inoshade-{state['ip'].split(':')[0]}-{memory}",
-            "cmd_t": f"Inoshade/{state['serial']}/{memory.lower()}/command",
+            "cmd_t": f"easyroll/{state['serial']}/{memory.lower()}/command",
             "uniq_id": f"Inoshade-{state['ip'].split(':')[0]}-{memory}",
             "device": {
                 "ids": f"easyroll blind-{state['ip'].split(':')[0]}",
@@ -213,7 +213,7 @@ def mqtt_discovery(state):
         square_topic = f"homeassistant/button/easyroll/{state['serial']}-{square.lower()}/config"
         square_payload = {
             "name": f"Inoshade-{state['ip'].split(':')[0]}-{square}",
-            "cmd_t": f"Inoshade/{state['serial']}/{square.lower()}/command",
+            "cmd_t": f"easyroll/{state['serial']}/{square.lower()}/command",
             "uniq_id": f"Inoshade-{state['ip'].split(':')[0]}-{square}",
             "device": {
                 "ids": f"easyroll blind-{state['ip'].split(':')[0]}",
