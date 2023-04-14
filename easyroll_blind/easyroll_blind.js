@@ -6,7 +6,7 @@
 const request = require('request');
 const mqtt = require('mqtt');
 const log = require('simple-node-logger').createSimpleLogger();
-const Options = require('/data/options.json');
+const Options = require('./config.json').options;
 
 let mqtt_config_topics = [];
 let address_array = [];
@@ -158,7 +158,9 @@ function parse_blind_value(state) {
     }
     previous_state = state
 
-    mqtt_discovery(state);
+    let discovery_on = false;
+    const discovery_set = setTimeout(() => { mqtt_discovery(state); discovery_on = true }, 3000);
+    if (discovery_on == true) clearTimeout(discovery_set);
 
     const topics = [[`easyroll/${state.serial}/percent/state`, state.position], [`easyroll/${state.serial}/position/state`, blind_moving]];
     for (const [i, topic] of Object.entries(topics)) {
