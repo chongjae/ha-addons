@@ -6,7 +6,7 @@
 const request = require('request');
 const mqtt = require('mqtt');
 const log = require('simple-node-logger').createSimpleLogger();
-const Options = require('./config.json').options;
+const Options = require('/data/options.json');
 
 let mqtt_config_topics = [];
 let address_array = [];
