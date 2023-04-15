@@ -1,7 +1,7 @@
 {
   "name": "Easyroll Blind",
   "version": "1.0.0",
-  "slug": "inoshade",
+  "slug": "easyroll",
   "description": "Add-on for Easyroll Blind",
   "arch": [
     "armhf",
