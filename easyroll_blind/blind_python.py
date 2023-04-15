@@ -33,10 +33,10 @@ def init_logger():
 for i in range(options['blind_connection']):
     address = options['server']['address' + str(i+1)]
     if address == '':
-        logger.info('not found address{} in config.json'.format(i+1))
+        logger.info("not found address")
         break
     else:
-        logger.info('found address{} in config.json'.format(i+1))
+        logger.info(f"found address   index: {i + 1}, address: {address}")
         address_array.append(address)
 
 state_url = 'http://{}:20318/lstinfo'
@@ -46,6 +46,9 @@ command_parameter = {
     'OPEN': 'TU',  # 최상단 올림
     'CLOSE': 'BD',  # 최하단 내림
     'STOP': 'SS',  # 정지
+    'M1': 'M1',
+    'M2': 'M2',
+    'M3': 'M3',
     'SQUAREUP': 'SU',  # 한 칸 올림
     'SQUAREDOWN': 'SD'  # 한 칸 내림
 }
@@ -101,7 +104,7 @@ def mqtt_on_message(mqtt, userdata, msg):
     payload = msg.payload.decode()
 
     if topics[0] != 'easyroll':
-        logger.error("Invalid topic prefix: {}".format(topics[0]))
+        logger.error("invalid topic prefix: {}".format(topics[0]))
         return
 
     logger.info("recv. message:  {} = {}".format(msg.topic, payload))
@@ -157,7 +160,13 @@ def parse_blind_value(state):
         return
 
     previous_state = state
-    mqtt_discovery(state)
+
+    discovery_on = False
+    if discovery_on == False:
+        mqtt_discovery(state)
+        time.sleep(5)
+        discovery_on = True
+
     mqtt_publish(state, blind_moving)
 
 
