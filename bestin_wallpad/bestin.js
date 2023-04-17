@@ -1,5 +1,5 @@
 /** 
- * @description bestin.js
+ * @description bestin_wallpad.js
  * @author harwin1
  */
 
