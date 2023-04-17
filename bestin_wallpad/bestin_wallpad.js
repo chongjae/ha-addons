@@ -13,7 +13,7 @@ const xml2js = require('xml2js');
 // 커스텀 파서
 const log = require('simple-node-logger').createSimpleLogger();
 const Transform = require('stream').Transform;
-const CONFIG = require('./config.json').options;
+const CONFIG = require('/data/options.json');
 
 
 const MSG_INFO = [
@@ -709,7 +709,7 @@ class rs485 {
                 this._discovery = true;
             }
         }, 0);
-        if (this._discovery) setTimeout(() => clearTimeout(discoverySet), 10000);
+        if (this._discovery) setTimeout(() => clearTimeout(discoverySet), 20000);
     }
 
     serverCreate(able, type) {
