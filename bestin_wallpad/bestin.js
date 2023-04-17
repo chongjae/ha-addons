@@ -301,7 +301,7 @@ class rs485 {
 
         if (topics[2] == 'living') {
             const unitNum = topics[3].replace(/power/g, 'switch');
-            this.serverLightCmd(unitNum, value);
+            this.lightCmdOptions(unitNum, value);
         } else {
             const [device, roomIdx, propertyName] = topics.slice(1, 4);
             this.setCommandProperty(device, roomIdx, propertyName, value);
@@ -697,7 +697,7 @@ class rs485 {
         }
         deviceStatus.property[propertyName] = propertyValue;
 
-        this.mqttClientUpdate(device, roomIdx, propertyName, propertyValue);
+        //this.mqttClientUpdate(device, roomIdx, propertyName, propertyValue);
 
         const discoverySet = setTimeout(() => {
             if (CONFIG.mqtt.discovery && !this._discovery) 
@@ -727,7 +727,7 @@ class rs485 {
 
             const parse = JSON.parse(body);
             if (response.statusCode === 200 && parse.ret === 'success') {
-                    log.info('I-PARK server login successful');
+                    log.info('I-PARK 1.0 server login successful');
                     that.cookieInfo(response);
             } else {
                 log.warn(`I-PARK 1.0 server login failed: ${parse.ret}`);
@@ -746,7 +746,7 @@ class rs485 {
 
             const parse = JSON.parse(body);
             if (response.statusCode === 200 && parse.ret === 'success') {
-                    log.info('I-PARK server login successful');
+                    log.info('I-PARK 2.0 server login successful');
                     that.cookieInfo(response);
             } else {
                 log.warn(`I-PARK 2.0 server login failed: ${parse.ret}`);
@@ -783,43 +783,34 @@ class rs485 {
             return;
         }
 
-
-
-            this.selectServerDevice();
-        } else if (type === 'relogin') {
-            log.info('successful refresh of session cookie information');
-        }
+        this.selectServerDevice();
     }
 
     selectServerDevice() {
         const functionsToCall = [];
-        for (const [deviceName, deviceBool] of Object.entries(CONFIG.ipark_server_device)) {
-            if (deviceBool === true) {
-                switch (deviceName) {
-                    case 'living_light':
-                        functionsToCall.push(this.IparkLightStatusOptions);
+        for (const {n, b} of Object.entries(CONFIG.ipark_server_device)) {
+            if (b) {
+                switch (n) {
+                    case 'light':
+                        functionsToCall.push(this.lightStatusOptions);
                         break;
                     case 'vehicle':
-                        functionsToCall.push(this.IparkVehicleStatusOptions);
+                        functionsToCall.push(this.vehicleStatusOptions);
                         break;
                     case 'delivery':
-                        functionsToCall.push(this.IparkDeliveryStatusOptions);
+                        functionsToCall.push(this.deliveryStatusOptions);
                         break;
                     case 'energy':
-                        functionsToCall.push(this.IparkEnergyStatusOptions);
+                        functionsToCall.push(this.energyStatusOptions);
                         break;
                 }
             }
-            log.info(`I-Park server selected devices: ${deviceName}::${deviceBool}`);
+            log.info(`I-Park server selected devices: ${n}::${b}`);
         }
-
         functionsToCall.forEach((func) => func.call(this));
-        setInterval(() => {
-            functionsToCall.forEach((func) => func.call(this)); log.info('Refresh I-Park server device status connection');
-        }, CONFIG.server_scan * 1000);
     }
 
-    IparkLightStatusOptions() {
+    lightStatusOptions() {
         const options = {
             url: `http://${CONFIG.ipark_server.address}/webapp/data/getHomeDevice.php`,
             headers: {
@@ -834,7 +825,7 @@ class rs485 {
         this.IparkServerStatusParse(options, 'light');
     }
 
-    IparkVehicleStatusOptions() {
+    vehicleStatusOptions() {
         const options = {
             url: `http://${CONFIG.ipark_server.address}/webapp/car_parking.php`,
             headers: {
@@ -849,7 +840,7 @@ class rs485 {
         this.IparkServerStatusParse(options, 'vehicle');
     }
 
-    IparkDeliveryStatusOptions() {
+    deliveryStatusOptions() {
         const options = {
             url: `http://${CONFIG.ipark_server.address}/webapp/deliveryList.php`,
             headers: {
@@ -861,13 +852,13 @@ class rs485 {
                 desiredPosts: '0', // 표시할 갯수
             },
         };
-        this.IparkServerStatusParse(options, 'delivery');
+        this.serverStatusParse(options, 'delivery');
     }
 
-    IparkEnergyStatusOptions() {
+    energyStatusOptions() {
         const day = new Date();
         const dayString = day.getFullYear() + "-" + (("00" + (day.getMonth() + 1).toString()).slice(-2));
-        const options_Elec = {
+        const options_elec = {
             url: `http://${CONFIG.ipark_server.address}/webapp/data/getEnergyAvr_monthly_Elec.php`,
             headers: {
                 'User-Agent': 'Mozilla/5.0',
@@ -877,8 +868,8 @@ class rs485 {
                 eDate3: dayString, // 가져올 데이터 날짜
             },
         };
-        this.IparkServerStatusParse2(options_Elec, 'energy_elec');
-        const options_Water = {
+        this.serverStatusParse2(options_elec, 'energy_elec');
+        const options_water = {
             url: `http://${CONFIG.ipark_server.address}/webapp/data/getEnergyAvr_monthly_Water.php`,
             headers: {
                 'User-Agent': 'Mozilla/5.0',
@@ -888,8 +879,8 @@ class rs485 {
                 eDate3: dayString, // 가져올 데이터 날짜
             },
         };
-        this.IparkServerStatusParse2(options_Water, 'energy_water');
-        const options_Gas = {
+        this.serverStatusParse2(options_water, 'energy_water');
+        const options_gas = {
             url: `http://${CONFIG.ipark_server.address}/webapp/data/getEnergyAvr_monthly_Gas.php`,
             headers: {
                 'User-Agent': 'Mozilla/5.0',
@@ -899,8 +890,8 @@ class rs485 {
                 eDate3: dayString, // 가져올 데이터 날짜
             },
         };
-        this.IparkServerStatusParse2(options_Gas, 'energy_gas');
-        const options_Hwater = {
+        this.serverStatusParse2(options_gas, 'energy_gas');
+        const options_hwater = {
             url: `http://${CONFIG.ipark_server.address}/webapp/data/getEnergyAvr_monthly_Hwater.php`,
             headers: {
                 'User-Agent': 'Mozilla/5.0',
@@ -910,8 +901,8 @@ class rs485 {
                 eDate3: dayString, // 가져올 데이터 날짜
             },
         };
-        this.IparkServerStatusParse2(options_Hwater, 'energy_hwater');
-        const options_Heat = {
+        this.serverStatusParse2(options_hwater, 'energy_hwater');
+        const options_heat = {
             url: `http://${CONFIG.ipark_server.address}/webapp/data/getEnergyAvr_monthly_Heat.php`,
             headers: {
                 'User-Agent': 'Mozilla/5.0',
@@ -921,10 +912,10 @@ class rs485 {
                 eDate3: dayString, // 가져올 데이터 날짜
             },
         };
-        this.IparkServerStatusParse2(options_Heat, 'energy_heat');
+        this.serverStatusParse2(options_heat, 'energy_heat');
     }
 
-    IparkLightCmdOptions(num, act) {
+    lightCmdOptions(num, act) {
         const options = {
             url: `http://${CONFIG.ipark_server.address}/webapp/data/getHomeDevice.php`,
             headers: {
@@ -939,17 +930,17 @@ class rs485 {
                 req_ctrl_action: act,
             },
         };
-        this.IparkServerCommand(options, num, act);
+        this.serverCommand(options, num, act);
     }
 
-    IparkServerStatusParse(options, name) {
+    serverStatusParse(options, name) {
         request.get(options, (error, response, body) => {
             if (response.statusCode === 200) {
                 switch (name) {
                     case 'light':
                         xml2js.parseString(body, (err, result) => {
                             if (err) {
-                                log.warn(`xml parsing failed with error: ${err}`);
+                                log.error(`xml parsing failed with error: ${err}`);
                                 return;
                             }
                             if (result) {
@@ -966,7 +957,7 @@ class rs485 {
                                         this.updateProperty('light', 'living', unitNum, unitStatus);
                                     });
                                 } catch (e) {
-                                    log.warn(`xml parsing failed with error: ${e}`);
+                                    log.error(`xml parsing failed with error: ${e}`);
                                 }
                             }
                         });
@@ -985,14 +976,14 @@ class rs485 {
                             }
                             this.updateProperty('vehicle', vehicle_parse[0].rownum, 'info', JSON.stringify(vehicle_result));
                         } catch (e) {
-                            log.warn(`json parsing failed with error: ${e}`);
+                            log.error(`json parsing failed with error: ${e}`);
                         }
                         break;
                     case 'delivery':
                         try {
                             const delivery_parse = JSON.parse(body);
                             if (!delivery_parse[0]) {
-                                //warn('json parsing failed: body property not found');
+                                log.warn('json parsing failed: body property not found');
                                 return;
                             }
                             const delivery_result = {
@@ -1002,17 +993,17 @@ class rs485 {
                             }
                             this.updateProperty('delivery', delivery_parse[0].rownum, 'info', JSON.stringify(delivery_result));
                         } catch (e) {
-                            log.warn(`json parsing failed with error: ${e}`);
+                            log.error(`json parsing failed with error: ${e}`);
                         }
                         break;
                 }
             } else {
-                log.warn(`request failed with error: ${error}`);
+                log.error(`request failed with error: ${error}`);
             }
         });
     }
 
-    IparkServerStatusParse2(options, name) {
+    serverStatusParse2(options, name) {
         request.get(options, (error, response, body) => {
             if (response.statusCode === 200) {
                 let parse = undefined;
@@ -1023,57 +1014,57 @@ class rs485 {
                         case 'energy_elec':
                             parse = JSON.parse(body);
                             result = {
-                                "total_elec_usage": parse[1].data[2],
-                                "average_elec_usage": parse[0].data[2],
+                                "total": parse[1].data[2],
+                                "aver": parse[0].data[2],
                             }
                             break;
                         case 'energy_water':
                             parse = JSON.parse(body);
                             result = {
-                                "total_water_usage": parse[1].data[2],
-                                "average_water_usage": parse[0].data[2],
+                                "total": parse[1].data[2],
+                                "aver": parse[0].data[2],
                             }
                             break;
                         case 'energy_gas':
                             parse = JSON.parse(body);
                             result = {
-                                "total_gas_usage": parse[1].data[2],
-                                "average_gas_usage": parse[0].data[2],
+                                "total": parse[1].data[2],
+                                "aver": parse[0].data[2],
                             }
                             break;
                         case 'energy_hwater':
                             parse = JSON.parse(body);
                             result = {
-                                "total_hwater_usage": parse[1].data[2],
-                                "average_hwater_usage": parse[0].data[2],
+                                "total": parse[1].data[2],
+                                "aver": parse[0].data[2],
                             }
                             break;
                         case 'energy_heat':
                             parse = JSON.parse(body);
                             result = {
-                                "total_heat_usage": parse[1].data[2],
-                                "average_heat_usage": parse[0].data[2],
+                                "total": parse[1].data[2],
+                                "aver": parse[0].data[2],
                             }
                             break;
                     }
                     for (const [key, value] of Object.entries(result)) {
-                        if (key.includes('total')) {
+                        if (key == 'total') {
                             this.updateProperty('energy', propName, 'total', value);
                         }
-                        if (key.includes('average')) {
-                            this.updateProperty('energy', propName, 'equilibrium_average', value);
+                        if (key == 'aver') {
+                            this.updateProperty('energy', propName, 'equi_aver', value);
                         }
                     }
                 } catch (e) {
-                    log.warn(`json parsing failed with error: ${e}`);
+                    log.error(`json parsing failed with error: ${e}`);
                 }
             } else {
-                log.warn(`request failed with error: ${error}`);
+                log.error(`request failed with error: ${error}`);
             }
         });
     }
 
-    IparkServerCommand(options, num, act) {
+    serverCommand(options, num, act) {
         request.get(options, (error, response) => {
             if (response.statusCode === 200) {
                 try {
@@ -1081,10 +1072,10 @@ class rs485 {
                     log.info(`request Successful: ${unitNum} ${act}`);
                     this.mqttClientUpdate('light', 'living', unitNum, act);
                 } catch (e) {
-                    log.warn(`request failed light with error: ${e}`);
+                    log.error(`request failed light with error: ${e}`);
                 }
             } else {
-                log.warn(`request failed with error: ${error}`);
+                log.error(`request failed with error: ${error}`);
             }
         });
     }
