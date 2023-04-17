@@ -87,7 +87,7 @@
       "password": "str?"
     },
     "ipark_server_device": {
-      "living_light": "bool",
+      "light": "bool",
       "vehicle": "bool",
       "delivery": "bool",
       "energy": "bool"
