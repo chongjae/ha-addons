@@ -703,13 +703,13 @@ class rs485 {
 
         this.mqttClientUpdate(device, roomIdx, propertyName, propertyValue);
 
-        const discoverySet = setTimeout(() => {
+        const discoverySet = setInterval(() => {
             if (CONFIG.mqtt.discovery && !this._discovery) {
                 this.mqttDiscovery(device, roomIdx, propertyName);
                 this._discovery = true;
             }
         }, 0);
-        if (this._discovery) setTimeout(() => clearTimeout(discoverySet), 20000);
+        if (this._discovery) setTimeout(() => clearInterval(discoverySet), 20000);
     }
 
     serverCreate(able, type) {
