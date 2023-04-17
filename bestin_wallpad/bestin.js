@@ -1,11 +1,6 @@
 /** 
- * @fileoverview bestin.js
  * @description bestin.js
- * @version 1.7.0
- * @license MIT
  * @author harwin1
- * @date 2023-02-12
- * @lastUpdate 2023-02-28
  */
 
 //const fs = require('fs');
@@ -16,10 +11,10 @@ const request = require('request');
 const xml2js = require('xml2js');
 
 // 커스텀 파서
+const log = require('simple-node-logger').createSimpleLogger();
 const Transform = require('stream').Transform;
 const CONFIG = require('/data/options.json');
-if (CONFIG.log.debug_mode) file_path = CONFIG.log.file_path;
-const log = require('simple-node-logger').createSimpleLogger(file_path);
+
 
 const MSG_INFO = [
     /////////////////////////////////////////////////////////////////////////////
@@ -83,8 +78,8 @@ const MSG_INFO = [
     {
         device: 'light', header: 0x02311E91, length: 30, request: 'ack',
         parseToProperty: (b) => {
-            var propArr = []; let m = (b[6].toString(16).slice(0, 1) === 'c' ? 4 : 3);
-            let num = (b[5] & 0x0F) === 1 ? m : 2;
+            var propArr = []; let m = (b[6].toString(16).slice(0, 1) == 'c' ? 4 : 3);
+            let num = (b[5] & 0x0F) == 1 ? m : 2;
             for (let i = 0; i < num; i++) {
                 propArr.push({
                     device: 'light', roomIdx: b[5] & 0x0F, propertyName: 'power' + (i + 1),
@@ -102,7 +97,7 @@ const MSG_INFO = [
     {
         device: 'outlet', header: 0x02311E91, length: 30, request: 'ack',
         parseToProperty: (b) => {
-            var propArr = []; let num = (b[5] & 0x0F) === 1 ? 3 : 2;
+            var propArr = []; let num = (b[5] & 0x0F) == 1 ? 3 : 2;
             for (let i = 0; i < num; i++) {
                 consumption = b.length > (i1 = 14 + 2 * i) + 2 ? parseInt(b.slice(i1, i1 + 2).toString('hex'), 16) / 10 : 0;
                 propArr.push({
@@ -254,7 +249,7 @@ class rs485 {
         this._mqttPrefix = CONFIG.mqtt.prefix;
         this._connEnergy = this.createConnection(CONFIG.energy_port, 'energy');
         this._connControl = this.createConnection(CONFIG.control_port, 'control');
-        this.enableIparkServer(CONFIG.server_enable, CONFIG.server_type);
+        this.serverCreate(CONFIG.server_enable, CONFIG.server_type);
     }
 
     mqttClient() {
@@ -304,9 +299,9 @@ class rs485 {
             return;
         }
 
-        if (topics[2] === 'living') {
+        if (topics[2] == 'living') {
             const unitNum = topics[3].replace(/power/g, 'switch');
-            this.IparkLightCmdOptions(unitNum, value);
+            this.serverLightCmd(unitNum, value);
         } else {
             const [device, roomIdx, propertyName] = topics.slice(1, 4);
             this.setCommandProperty(device, roomIdx, propertyName, value);
@@ -571,7 +566,7 @@ class rs485 {
         receivedMsg.lastReceive = this._lastReceive;
         receivedMsg.timeslot = this._lastReceive - this._syncTime;
 
-        if (Boolean(receivedMsg.checksum) === false) {
+        if (!Boolean(receivedMsg.checksum)) {
             log.error(`checksum error: ${receivedMsg.code}, ${this.generateCheckSum(receivedMsg.codeHex)}`);
             return;
         }
@@ -672,13 +667,13 @@ class rs485 {
             log.warn(`unknown device: ${device}`);
             return;
         }
-        if (msgInfo.device === 'gas' && propertyValue === 'on') {
+        if (msgInfo.device == 'gas' && propertyValue == 'on') {
             log.warn('The gas valve only supports locking');
             return;
         }
 
         const cmdHex = Buffer.alloc(msgInfo.length);
-        msgInfo.length === 10 ? cmdHex.writeUIntBE(msgInfo.header, 0, 3) : cmdHex.writeUIntBE(msgInfo.header, 0, 4)
+        msgInfo.length == 10 ? cmdHex.writeUIntBE(msgInfo.header, 0, 3) : cmdHex.writeUIntBE(msgInfo.header, 0, 4)
         msgInfo.setPropertyToMsg(cmdHex, roomIdx, propertyName, propertyValue);
         cmdHex[msgInfo.length - 1] = this.generateCheckSum(cmdHex);
 
@@ -712,53 +707,51 @@ class rs485 {
         if (this._discovery) clearTimeout(discoverySet)
         
 
-    enableIparkServer(enable) {
-        if (enable) {
-            this.IparkLoginRequest('none');
+    serverCreate(able, type) {
+        if (able) {
+            if (type == '1.0') this.serverLogin();
+            else (type == '2.0') this.serverLogin2();
         } else {
-            log.info('I-PARK server disabled');
+            log.info(`I-PARK ${type} server disabled`);
         }
     }
 
-    IparkLoginRequest(loginType) {
+    serverLogin() {
         const that = this;
         const login = `http://${CONFIG.ipark_server.address}/webapp/data/getLoginWebApp.php?device=WA&login_ide=${CONFIG.ipark_server.username}&login_pwd=${CONFIG.ipark_server.password}`;
         request.get(login, (error, response, body) => {
             if (error) {
-                log.warn(`I-PARK server login failed with error code: ${error}`);
+                log.error(`I-PARK 1.0 server login failed with error code: ${error}`);
                 return;
             }
 
             const parse = JSON.parse(body);
             if (response.statusCode === 200 && parse.ret === 'success') {
-                if (loginType === 'none') {
                     log.info('I-PARK server login successful');
-                    that.reloginRequest(false);
-                    that.CookieInfo(response, 'none');
-                } else if (loginType === 'relogin') {
-                    log.info('I-PARK server session refresh successful');
-                    that.reloginRequest(true);
-                    that.CookieInfo(response, 'relogin');
-                }
+                    that.cookieInfo(response);
             } else {
-                log.info(`I-PARK server login failed: ${parse.ret}`);
+                log.warn(`I-PARK 1.0 server login failed: ${parse.ret}`);
             }
         });
     }
-
-    reloginRequest(boolean) {
+    
+    serverLogin2() {
         const that = this;
-        let intervalId = null;
-        function refresh() {
-            log.info('Start I-Park server refresh...');
-            that.IparkLoginRequest('relogin');
-        }
-        if (boolean === true) {
-            log.info('finish I-Park server refresh');
-            clearInterval(intervalId);
-        } else {
-            intervalId = setInterval(refresh, 1200000);
-        }
+        const login = ``;
+        request.post(login, (error, response, body) => {
+            if (error) {
+                log.error(`I-PARK 2.0 server login failed with error code: ${error}`);
+                return;
+            }
+
+            const parse = JSON.parse(body);
+            if (response.statusCode === 200 && parse.ret === 'success') {
+                    log.info('I-PARK server login successful');
+                    that.cookieInfo(response);
+            } else {
+                log.warn(`I-PARK 2.0 server login failed: ${parse.ret}`);
+            }
+        });
     }
 
     //errorfile(parse) {
@@ -770,8 +763,8 @@ class rs485 {
     //    }
     //}
 
-    CookieInfo(response, type) {
-        const cookies = response.headers['set-cookie'];
+    cookieInfo(res) {
+        const cookies = res.headers['set-cookie'];
         const cookieMap = cookies.reduce((acc, cookie) => {
             const [key, value] = cookie.split('=');
             acc[key] = value.split(';')[0];
@@ -790,8 +783,8 @@ class rs485 {
             return;
         }
 
-        if (type === 'none') {
-            log.info(`Success. login cookie information: ${JSON.stringify(this._cookieInfo)}`);
+
+
             this.selectServerDevice();
         } else if (type === 'relogin') {
             log.info('successful refresh of session cookie information');
