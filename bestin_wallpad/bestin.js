@@ -254,7 +254,7 @@ class rs485 {
         this._mqttPrefix = CONFIG.mqtt.prefix;
         this._connEnergy = this.createConnection(CONFIG.energy_port, 'energy');
         this._connControl = this.createConnection(CONFIG.control_port, 'control');
-        this.enableIparkServer(CONFIG.server_enable);
+        this.enableIparkServer(CONFIG.server_enable, CONFIG.server_type);
     }
 
     mqttClient() {
@@ -704,18 +704,13 @@ class rs485 {
 
         this.mqttClientUpdate(device, roomIdx, propertyName, propertyValue);
 
-        let registCover = setImmediate(() => {
-            if (this._discovery === false) {
-                if (CONFIG.mqtt.discovery) this.mqttDiscovery(device, roomIdx, propertyName);
-            } else {
-                return true;
-            }
-        });
-        setTimeout(() => {
-            clearImmediate(registCover);
-            this._discovery = true;
-        }, 10000);
-    }
+        const discoverySet = setTimeout(() => {
+            if (CONFIG.mqtt.discovery && !this._discovery) 
+                this.mqttDiscovery(device, roomIdx, propertyName); 
+                this._discovery = true;
+                }, 5000);
+        if (this._discovery) clearTimeout(discoverySet)
+        
 
     enableIparkServer(enable) {
         if (enable) {
