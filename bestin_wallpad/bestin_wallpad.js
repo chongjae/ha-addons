@@ -532,7 +532,7 @@ class rs485 {
             this._connection.on('error', (err) => {
                 if (err.code == 'ETIMEDOUT') {
                     log.error(`${name} connection error occurred process.exit`);
-                    //setTimeout(() => process.exit(1), 0);
+                    setTimeout(() => process.exit(1), 0);
                 } else {
                     log.error(`connection error ${err.code}::${name.toUpperCase()}. try to reconnect...`);
                     this._connection.connect(options.port, options.address);
@@ -704,11 +704,12 @@ class rs485 {
         this.mqttClientUpdate(device, roomIdx, propertyName, propertyValue);
 
         const discoverySet = setTimeout(() => {
-            if (CONFIG.mqtt.discovery && !this._discovery)
+            if (CONFIG.mqtt.discovery && !this._discovery) {
                 this.mqttDiscovery(device, roomIdx, propertyName);
-            this._discovery = true;
-        }, 5000);
-        if (this._discovery) clearTimeout(discoverySet)
+                this._discovery = true;
+            }
+        }, 0);
+        if (this._discovery) setTimeout(() => clearTimeout(discoverySet), 5000);
     }
 
     serverCreate(able, type) {
