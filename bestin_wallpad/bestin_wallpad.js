@@ -710,7 +710,7 @@ class rs485 {
   serverCreate(able, type) {
     if (able) {
       if (type == '1.0') this.serverLogin()
-      else (type == '2.0'); this.serverLogin2()
+      else if (type == '2.0'); this.serverLogin2()
     } else {
       log.info(`I-PARK ${type} server disabled`);
     }
