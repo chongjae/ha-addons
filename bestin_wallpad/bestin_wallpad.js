@@ -13,7 +13,7 @@ const xml2js = require('xml2js');
 // 커스텀 파서
 const log = require('simple-node-logger').createSimpleLogger();
 const Transform = require('stream').Transform;
-const CONFIG = require('/data/options.json');
+const CONFIG = require('./config.json').options;
 
 
 const MSG_INFO = [
@@ -703,13 +703,10 @@ class rs485 {
 
         this.mqttClientUpdate(device, roomIdx, propertyName, propertyValue);
 
-        const discoverySet = setImmediate(() => {
-            if (CONFIG.mqtt.discovery && !this._discovery) {
-                this.mqttDiscovery(device, roomIdx, propertyName);
-                this._discovery = true;
-            }
-        }, 0);
-        if (this._discovery) setTimeout(() => clearImmediate(discoverySet), 10000);
+        if (CONFIG.mqtt.discovery && !this._discovery) {
+            this.mqttDiscovery(device, roomIdx, propertyName);
+            setTimeout(() => { this._discovery = true }, 10000);
+        }
     }
 
     serverCreate(able, type) {
