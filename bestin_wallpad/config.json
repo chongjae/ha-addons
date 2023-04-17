@@ -20,7 +20,7 @@
   "options": {
     "server_enable": true,
     "server_scan": 300,
-    "server_type": 1.0,
+    "server_type": 1.0
     "rs485": {
       "retry_delay": 100,
       "retry_count": 20
