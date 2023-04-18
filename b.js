@@ -288,7 +288,7 @@ class rs485 {
         }
         const topics = topic.split("/");
         const value = message.toString();
-        if (topics[0] !== 'bestin') {
+        if (topics[0] !== CONFIG.mqtt.prefix) {
             return;
         }
 
@@ -305,7 +305,8 @@ class rs485 {
         if (!this._deviceReady) {
             return;
         }
-        const topic = `${this._mqttPrefix}/${device}/${roomIdx}/${propertyName}/state`;
+        const prefix = CONFIG.mqtt.prefix;
+        const topic = `${prefix}/${device}/${roomIdx}/${propertyName}/state`;
 
         if (typeof (propertyValue) !== 'number') {
             log.info(`publish to mqtt: ${topic} = ${propertyValue}`);
@@ -314,13 +315,14 @@ class rs485 {
     }
 
     mqttDiscovery(device, roomIdx, Idx) {
+        const prefix = CONFIG.mqtt.prefix;
         switch (device) {
             case 'light':
                 var topic = `homeassistant/light/bestin_wallpad/light_${roomIdx}_${Idx}/config`;
                 var payload = {
                     name: `bestin_light_${roomIdx}_${Idx}`,
-                    cmd_t: `${this._mqttPrefix}/light/${roomIdx}/${Idx}/command`,
-                    stat_t: `${this._mqttPrefix}/light/${roomIdx}/${Idx}/state`,
+                    cmd_t: `${prefix}/light/${roomIdx}/${Idx}/command`,
+                    stat_t: `${prefix}/light/${roomIdx}/${Idx}/state`,
                     uniq_id: `bestin_light_${roomIdx}_${Idx}`,
                     pl_on: "on",
                     pl_off: "off",
@@ -329,7 +331,7 @@ class rs485 {
                         name: "bestin_wallpad",
                         mf: "HDC BESTIN",
                         mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/bestin-v1/bestin_wallpad",
+                        sw: "harwin1/ha-addons/bestin_wallpad",
                     }
                 }
                 break;
@@ -338,8 +340,8 @@ class rs485 {
                 var topic = `homeassistant/${component}/bestin_wallpad/outlet_${roomIdx}_${Idx}/config`;
                 var payload = {
                     name: `bestin_outlet_${roomIdx}_${Idx}`,
-                    cmd_t: `${this._mqttPrefix}/outlet/${roomIdx}/${Idx}/command`,
-                    stat_t: `${this._mqttPrefix}/outlet/${roomIdx}/${Idx}/state`,
+                    cmd_t: `${prefix}/outlet/${roomIdx}/${Idx}/command`,
+                    stat_t: `${prefix}/outlet/${roomIdx}/${Idx}/state`,
                     uniq_id: `bestin_outlet_${roomIdx}_${Idx}`,
                     pl_on: "on",
                     pl_off: "off",
@@ -350,7 +352,7 @@ class rs485 {
                         name: "bestin_wallpad",
                         mf: "HDC BESTIN",
                         mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/bestin-v1/bestin_wallpad",
+                        sw: "harwin1/ha-addons/bestin_wallpad",
                     }
                 }
                 break;
