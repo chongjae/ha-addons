@@ -28,30 +28,30 @@
     "energy": {
       "type": "socket",
       "path": "/dev/ttyUSB0",
-      "address": "222.108.154.175",
+      "address": "",
       "port": 8899
     },
     "control": {
       "type": "socket",
       "serpath": "/dev/ttyUSB0",
-      "address": "222.108.154.175",
+      "address": "",
       "port": 8889
     },
     "server": {
-      "address": "10.1.3.1",
-      "username": "test",
-      "password": "halwin1212!!",
-      "uuid": "ha_yoocj_chd0922"
+      "address": "",
+      "username": "",
+      "password": "",
+      "uuid": ""
     },
     "log": {
       "debug_mode": false,
       "file_path": "/share/bestin/bestin_wallpad.log"
     },
     "mqtt": {
-      "broker": "192.168.1.10",
+      "broker": "",
       "port": 1883,
-      "username": "harwin",
-      "password": "mosquitto",
+      "username": "",
+      "password": "",
       "prefix": "bestin",
       "discovery": true
     }
