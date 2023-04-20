@@ -2,7 +2,7 @@
 
 SHARE_DIR=/share/bestin
 
-if [ ! -f $SHARE_DIR/bestin.js ]; then
+if [ ! -f $SHARE_DIR/bestin_wallpad.js ]; then
     mkdir -p $SHARE_DIR
     mv /bestin_wallpad.js $SHARE_DIR
 fi
