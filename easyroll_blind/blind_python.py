@@ -17,6 +17,7 @@ mqtt = paho_mqtt.Client()
 
 address_array = []
 previous_state = {}
+blind_moving = ""
 value_array = None
 
 
@@ -141,7 +142,7 @@ def updata_blind_position():
 
 
 def parse_blind_value(state):
-    global previous_state, value_array
+    global blind_moving, previous_state, value_array
 
     if state['position'] == '100':
         blind_moving = 'closed'
