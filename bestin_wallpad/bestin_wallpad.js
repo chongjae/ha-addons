@@ -28,6 +28,7 @@ const {
     EVSTATE,
     VENTTEMP,
     VENTTEMPI,
+    LENBUFFER,
     OnOff
 } = require('./const.js');
 
@@ -162,6 +163,7 @@ const MSG_INFO = [
     },
 ];
 
+
 class CustomParser extends Transform {
     constructor(options) {
         super(options);
@@ -173,6 +175,7 @@ class CustomParser extends Transform {
         this._lenCount = 0;
         this._length = undefined;
         this._typeFlag = false;
+        this._array = LENBUFFER;
         this._prefix = Buffer.from([0x02]);
         this._headers = Buffer.from([0x31, 0x41, 0x42, 0xD1, 0x28, 0x61]);
     }
@@ -187,7 +190,7 @@ class CustomParser extends Transform {
                 this._queueChunk = [];
                 start = prefixIndex;
                 this._typeFlag = true;
-                let expectedLength = this.expectedLength(chunk, prefixIndex + 1);
+                let expectedLength = this._array.includes(chunk[prefixIndex + 2]) ? 10 : chunk[prefixIndex + 2];
                 if (expectedLength) {
                     this._length = expectedLength;
                     this._typeFlag = false;
@@ -215,14 +218,6 @@ class CustomParser extends Transform {
         this.push(Buffer.concat(this._queueChunk));
         this.reset();
         done();
-    }
-
-    expectedLength(chunk, i) {
-        if (chunk[i] === 0x61 || (chunk[i] === 0x31 && [0x00, 0x02, 0x80, 0x82].includes(chunk[i + 1]))) {
-            return 10;
-        }
-        return chunk[i + 1];
-
     }
 }
 
@@ -285,15 +280,18 @@ class rs485 {
             logger.warn('MQTT is not ready yet');
             return;
         }
-        const topics = topic.split("/");
-        const value = message.toString();
-        const sert = CONFIG.server_type;
+        let topics = topic.split("/");
+        let value = message.toString();
+        let sert = CONFIG.server_type;
+        let json;
         if (topics[0] !== CONFIG.mqtt.prefix) {
             return;
         }
 
         const cmdtopic = `${topics[0]}/${topics[1]}/${topics[2]}/${topics[3]}/command`;
-        const json = JSON.parse(fs.readFileSync('./session.json'));
+        if (CONFIG.server_enable) {
+            json = JSON.parse(fs.readFileSync('./session.json'));
+        }
 
         logger.info(`recv. message: ${cmdtopic} = ${value}`);
         if (topics[2] === 'livingroom') {
@@ -553,7 +551,7 @@ class rs485 {
         return this._connection;
     }
 
-    packetHandle(data) {        
+    packetHandle(data) {   
         this._lastReceive = new Date();
         if (data[0] === 0x02 && data[1] !== 0x41) {
             this._syncTime = this._lastReceive;
@@ -1030,4 +1028,3 @@ class rs485 {
 
 }
 new rs485();
-
