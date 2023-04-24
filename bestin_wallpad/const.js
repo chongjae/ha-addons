@@ -92,7 +92,9 @@ const OnOff = {
     'gas': 'off',
     'doorlock': 'on',
     'lightbatch': 'on'
-};
+}
+
+LENBUFFER = [0x00, 0x01, 0x02, 0x03, 0x04, 0x80, 0x81, 0x82, 0x83, 0x84]
 
 module.exports = {
     V1LOGIN,
@@ -106,5 +108,6 @@ module.exports = {
     EVSTATE,
     VENTTEMP,
     VENTTEMPI,
+    LENBUFFER,
     OnOff
 };
