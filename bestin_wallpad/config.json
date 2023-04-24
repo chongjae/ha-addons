@@ -1,0 +1,96 @@
+{
+  "name": "HDC BESTIN WallPad RS485 Addon",
+  "version": "1.5.0",
+  "slug": "bestin_wallpad",
+  "description": "현대산업개발 베스틴 월패드용 애드온입니다.",
+  "arch": [
+    "armhf",
+    "armv7",
+    "aarch64",
+    "amd64",
+    "i386"
+  ],
+  "map": [
+    "share:rw"
+  ],
+  "url": "https://github.com/harwin1/ha-addons",
+  "startup": "application",
+  "boot": "auto",
+  "uart": true,
+  "options": {
+    "server_enable": true,
+    "server_type": "v2",
+    "energy": {
+      "type": "socket",
+      "path": "/dev/ttyUSB0",
+      "address": "192.168.1.1",
+      "port": 8889
+    },
+    "control": {
+      "type": "socket",
+      "path": "/dev/ttyUSB0",
+      "address": "192.168.1.1",
+      "port": 8899
+    },
+    "server": {
+      "address": "10.12.1.1",
+      "username": "",
+      "password": "",
+      "uuid": "",
+      "scan_interval": 300
+    },
+    "mqtt": {
+      "broker": "192.168.1.1",
+      "port": 1883,
+      "username": "",
+      "password": "",
+      "prefix": "bestin",
+      "discovery": true
+    },
+    "rs485": {
+      "max_retry": 20
+    },
+    "log": {
+      "file": true,
+      "level": "silly"
+    }
+  },
+  "schema": {
+    "server_enable": "bool",
+    "server_type": "list(v1|v2)",
+    "energy": {
+      "type": "list(serial|socket)",
+      "path": "str?",
+      "address": "str?",
+      "port": "int?"
+    },
+    "control": {
+      "type": "list(serial|socket)",
+      "path": "str?",
+      "address": "str?",
+      "port": "int?"
+    },
+    "server": {
+      "address": "str?",
+      "username": "str?",
+      "password": "str?",
+      "uuid": "str?",
+      "scan_interval": "int"
+    },
+    "mqtt": {
+      "broker": "str",
+      "port": "int",
+      "username": "str?",
+      "password": "str?",
+      "prefix": "str",
+      "discovery": "bool"
+    },
+    "rs485": {
+      "max_retry": "int"
+    },
+    "log": {
+      "file": "bool",
+      "level": "list(silly|info|error|warn)"
+    }
+  }
+}
