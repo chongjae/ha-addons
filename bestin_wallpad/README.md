@@ -1,9 +1,9 @@
 # HDC 베스틴 월패드 RS485 Add-on 
-# thank chongjae for writing the README
+thank chongjae for writing the README
 
 ![Supports aarch64 Architecture][aarch64-shield] ![Supports amd64 Architecture][amd64-shield] ![Supports armhf Architecture][armhf-shield] ![Supports armv7 Architecture][armv7-shield] ![Supports i386 Architecture][i386-shield]
 
-# 소개 (
+# 소개 
 * 베스틴 월패드를 사용하는 집에서 사용가능한 애드온 입니다. (월패드 버전 1.0, 2.0).
 * MQTT discovery를 이용하여, /통합구성요소/mqtt/기기(bestin_wallpad) 탭에 본인 집 환경에 따라 디바이스가 추가 됩니다.
 * 현재 버전에서 추가적인 업데이트는 없습니다. 혹시나 논의가 필요하다면 하단의 지원 부분을 확인 바랍니다.
