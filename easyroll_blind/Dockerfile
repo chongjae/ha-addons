@@ -1,16 +1,18 @@
-FROM python:3
+FROM python:3.9-slim-buster
 
-ENV LANG C.UTF-8
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        git && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copy data for add-on
-COPY run.sh easyroll_blind.py /
+RUN pip install requests paho-mqtt
 
-# Install requirements for add-on
-RUN apt-get update && apt-get -y install jq
-RUN python3 -m pip install requests && \
-        python3 -m pip install paho-mqtt
+RUN mkdir /app
+WORKDIR /app
 
-WORKDIR /share
-RUN chmod a+x /run.sh
+COPY easyroll_blind.py /app
+COPY run.sh /app
+RUN chmod +x /app/run.sh
 
-CMD [ "/run.sh" ]
+CMD ["./run.sh"]
