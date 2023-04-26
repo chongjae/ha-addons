@@ -166,6 +166,7 @@ const MSG_INFO = [
     },
 ];
 
+
 class CustomParser extends Transform {
     constructor(options) {
         super(options);
@@ -182,6 +183,7 @@ class CustomParser extends Transform {
         this.bufferHeaders = Buffer.from([0x31, 0x41, 0x42, 0x17, 0xD1, 0x28, 0x61]);
     }
 
+/*
     _transform(chunk, encoding, done) {
         let start = 0;
         let prefixIndex = chunk.indexOf(this.bufferPrefix);
@@ -251,6 +253,37 @@ class CustomParser extends Transform {
         let length = LENBUFFER.includes(chunk[i + 2]);
 
         return (header && length) ? 10 : chunk[i + 2];
+    }
+}
+*/
+
+    _transform(chunk, encoding, done) {
+        let start = 0;
+        for (let i = 0; i < chunk.length; i++) {
+            if (this._prefix === chunk[i] && this.bufferHeaders.includes(chunk[i + 1])) {
+                this.push(Buffer.concat(this.bufferQueueChunk));
+                this.bufferQueueChunk = [];
+                start = i;
+                this._typeFlag = true;
+            } 
+
+            if (this.bufferLenCount === this.bufferLength - 1) {
+                this.bufferQueueChunk.push(chunk.slice(start, i + 1));
+                this.push(Buffer.concat(this.bufferQueueChunk));
+                this.bufferQueueChunk = [];
+                start = i + 1;
+            } else {
+                this.bufferLenCount++;
+            }
+        }
+        this.bufferQueueChunk.push(chunk.slice(start));
+        done();
+    }
+
+    _flush(done) {
+        this.push(Buffer.concat(this.bufferQueueChunk));
+        this.reset();
+        done();
     }
 }
 
