@@ -69,7 +69,7 @@ const V2LIGHTCMD = {
 const V2ELEVATORCMD = {
     url: '{0}/v2/admin/elevators/home/apply',
     method: 'POST',
-    body: JSON.stringify({ 'address': `${address}`, 'direction': 'down' }), 
+    body: JSON.stringify({ 'address': `${address}`, 'direction': 'down' }),
     headers: {
         'content-type': 'application/json',
         'authorization': uuid,
@@ -95,6 +95,7 @@ const OnOff = {
 }
 
 const LENBUFFER = [0x00, 0x01, 0x02, 0x03, 0x04, 0x80, 0x81, 0x82, 0x83, 0x84]
+const HEDBUFFER = [0x31, 0x41, 0x61]
 
 module.exports = {
     V1LOGIN,
@@ -109,5 +110,6 @@ module.exports = {
     VENTTEMP,
     VENTTEMPI,
     LENBUFFER,
+    HEDBUFFER,
     OnOff
 };
