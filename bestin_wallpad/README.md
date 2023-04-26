@@ -119,6 +119,8 @@ thank chongjae for writing the README
 * 사용하는 Server Type을 고릅니다.(v1 = 1.0, v2 = 2.0)
 
 ### `energy / control`
+* about
+  * energy 또는 control 하나만 연결하는 경우에는 애드온 구성 serial, socket 경우 path, address를 ""로 성정(기본값으로 설정되어 있음)
 * type
   * socket(ew11을 이용하는 경우)
   * serial(USB to RS485 혹은 TTL to RS485를 이용하는 경우)
