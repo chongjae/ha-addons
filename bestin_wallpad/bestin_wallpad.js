@@ -166,124 +166,72 @@ const MSG_INFO = [
     },
 ];
 
-
-class CustomParser extends Transform {
     constructor(options) {
         super(options);
-        this.reset();
-        this.maxBufferSize = 256;
+        this.resetBuffer();
     }
 
-    reset() {
-        this.bufferQueueChunk = [];
-        this.bufferLenCount = 0;
-        this.bufferLength = undefined;
-        this.bufferTypeFlag = false;
-        this.bufferPrefix = Buffer.from([0x02]);
-        this.bufferHeaders = Buffer.from([0x31, 0x41, 0x42, 0x17, 0xD1, 0x28, 0x61]);
+    resetBuffer() {
+        this.bufferQueue = [];
+        this.bufferLengthCount = 0;
+        this.expectedBufferLength = undefined;
+        this.isHeaderFound = false;
+        this.prefixBuffer = new Uint8Array([0x02]);
+        this.headerBuffer = new Uint8Array([0x31, 0x41, 0x42, 0x17, 0xD1, 0x28, 0x61]);
     }
 
-/*
     _transform(chunk, encoding, done) {
         let start = 0;
-        let prefixIndex = chunk.indexOf(this.bufferPrefix);
-
+        let prefixIndex = chunk.indexOf(this.prefixBuffer);
         while (prefixIndex >= 0) {
-            let headerIndex = this.bufferHeaders.indexOf(Number(chunk[prefixIndex + 1]));
-
+            let headerIndex = this.headerBuffer.indexOf(chunk[prefixIndex + 1]);
             if (headerIndex >= 0) {
-                if (this.bufferQueueChunk.length > 0) {
-                    this.push(Buffer.concat(this.bufferQueueChunk));
-                    this.bufferQueueChunk = [];
-                }
-
+                this.pushBufferedData();
+                this.bufferQueue = [];
                 start = prefixIndex;
-                this.bufferTypeFlag = true;
-
-                let expectedLength = this._expectedlen(chunk, prefixIndex);
-
+                this.isHeaderFound = true;
+                let expectedLength = this.parseExpectedLength(chunk, prefixIndex);
                 if (expectedLength) {
-                    this.bufferLength = expectedLength;
-                    this.bufferTypeFlag = false;
+                    this.expectedBufferLength = expectedLength;
+                    this.isHeaderFound = false;
                 } else {
-                    this.reset();
+                    this.resetBuffer();
                     return done();
                 }
-
-                if (this.bufferLength > this.maxBufferSize) {
-                    this.reset();
-                    return done(new Error(`Packet length exceeds maximum buffer size of ${this.maxBufferSize}`));
-                }
-
-                if (this.bufferLenCount === this.bufferLength - 1) {
-                    // complete packet
-                    this.bufferQueueChunk.push(chunk.slice(start, prefixIndex + this.bufferLength + 1));
-                    this.push(Buffer.concat(this.bufferQueueChunk));
-                    this.bufferQueueChunk = [];
-                    start = prefixIndex + this.bufferLength + 1;
+                if (this.bufferLengthCount === this.expectedBufferLength - 1) {
+                    this.bufferQueue.push(chunk.slice(start, prefixIndex + this.expectedBufferLength + 1));
+                    this.pushBufferedData();
+                    this.bufferQueue = [];
+                    start = prefixIndex + this.expectedBufferLength + 1;
                 } else {
-                    // partial packet
-                    this.bufferLenCount++;
+                    this.bufferLengthCount++;
                 }
             }
-
-            prefixIndex = chunk.indexOf(this.bufferPrefix, prefixIndex + 1);
+            prefixIndex = chunk.indexOf(this.prefixBuffer, prefixIndex + 1);
         }
-
-        if (this.bufferQueueChunk.reduce((acc, chunk) => acc + chunk.length, 0) > this.maxBufferSize) {
-            this.reset();
-            return done(new Error(`Buffer size exceeds maximum buffer size of ${this.maxBufferSize}`));
-        }
-
-        this.bufferQueueChunk.push(chunk.slice(start));
+        this.bufferQueue.push(chunk.slice(start));
         done();
     }
 
     _flush(done) {
-        if (this.bufferQueueChunk.length > 0) {
-            this.push(Buffer.concat(this.bufferQueueChunk));
-            this.bufferQueueChunk = [];
+        this.pushBufferedData();
+        this.resetBuffer();
+        done();
+    }
+
+    parseExpectedLength(chunk, i) {
+        let isHeaderValid = this.headerBuffer.includes(chunk[i + 1]);
+        let expectedLength = chunk[i + 2];
+        if (isHeaderValid && expectedLength <= 10) {
+            return 10;
         }
-        this.reset();
-        done();
+        return expectedLength;
     }
 
-    _expectedlen(chunk, i) {
-        let header = HEDBUFFER.includes(chunk[i + 1]);
-        let length = LENBUFFER.includes(chunk[i + 2]);
-
-        return (header && length) ? 10 : chunk[i + 2];
-    }
-}
-*/
-
-    _transform(chunk, encoding, done) {
-        let start = 0;
-        for (let i = 0; i < chunk.length; i++) {
-            if (this._prefix === chunk[i] && this.bufferHeaders.includes(chunk[i + 1])) {
-                this.push(Buffer.concat(this.bufferQueueChunk));
-                this.bufferQueueChunk = [];
-                start = i;
-                this._typeFlag = true;
-            } 
-
-            if (this.bufferLenCount === this.bufferLength - 1) {
-                this.bufferQueueChunk.push(chunk.slice(start, i + 1));
-                this.push(Buffer.concat(this.bufferQueueChunk));
-                this.bufferQueueChunk = [];
-                start = i + 1;
-            } else {
-                this.bufferLenCount++;
-            }
+    pushBufferedData() {
+        if (this.bufferQueue.length > 0) {
+            this.push(Buffer.concat(this.bufferQueue));
         }
-        this.bufferQueueChunk.push(chunk.slice(start));
-        done();
-    }
-
-    _flush(done) {
-        this.push(Buffer.concat(this.bufferQueueChunk));
-        this.reset();
-        done();
     }
 }
 
