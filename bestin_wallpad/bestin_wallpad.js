@@ -29,6 +29,7 @@ const {
     VENTTEMP,
     VENTTEMPI,
     LENBUFFER,
+    HEDBUFFER,
     OnOff
 } = require('./const.js');
 
@@ -88,15 +89,15 @@ const MSG_INFO = [
     /////////////////////
     //query <-> response
     {
-        device: 'light', header: [0x02311E91, 0x0231282], length: 30, request: 'ack',
+        device: 'light', header: 0x02311E91, length: 30, request: 'ack',
         parseToProperty: (b) => {
-    
+
             let props = [];
             for (let i = 0; i < ((b[5] & 0x0f) === 1 ? 4 : 2); i++) {
-                props.push({ device: 'light', room: b[5] & 0x0f, name: `power${i + 1}`, value: (b[6] & (1 << i)) ? 'on' : 'off' });
+                props.push({ device: 'light', room: b[5] & 0x0f, name: `power${i + 1}`, value: (b[6] & (1 << i)) ? 'on' : 'off' })
             }
             props.push({ device: 'light', room: b[5] & 0x0f, name: 'batch', value: (b[6] & 0x0F) ? 'on' : 'off' },
-                { device: 'light', room: 'all', name: 'batch', value: b[3] == 0x12 ? 'on' : 'off' });
+                { device: 'light', room: 'all', name: 'batch', value: (b[6] << 1) ? 'on' : 'off' });
 
             return props;
         }
@@ -131,8 +132,10 @@ const MSG_INFO = [
     {
         device: 'fan', header: 0x026180, length: 10, request: 'ack',
         parseToProperty: (b) => {
+            let val;
+            if (VENTTEMPI.hasOwnProperty(b[6])) val = VENTTEMPI[b[6]];
             return [{ device: 'fan', room: '1', name: 'power', value: (b[5] ? 'on' : 'off') },
-                { device: 'fan', room: '1', name: 'preset', value: VENTTEMPI[b[6]] }];
+            { device: 'fan', room: '1', name: 'preset', value: val }];
         }
     },
     {
@@ -163,64 +166,93 @@ const MSG_INFO = [
     },
 ];
 
-
 class CustomParser extends Transform {
     constructor(options) {
         super(options);
         this.reset();
+        this.maxBufferSize = 256;
     }
 
     reset() {
-        this._queueChunk = [];
-        this._lenCount = 0;
-        this._length = undefined;
-        this._typeFlag = false;
-        this._array = LENBUFFER;
-        this._prefix = Buffer.from([0x02]);
-        this._headers = Buffer.from([0x31, 0x41, 0x42, 0xD1, 0x28, 0x61]);
+        this.bufferQueueChunk = [];
+        this.bufferLenCount = 0;
+        this.bufferLength = undefined;
+        this.bufferTypeFlag = false;
+        this.bufferPrefix = Buffer.from([0x02]);
+        this.bufferHeaders = Buffer.from([0x31, 0x41, 0x42, 0x17, 0xD1, 0x28, 0x61]);
     }
 
     _transform(chunk, encoding, done) {
         let start = 0;
-        let prefixIndex = chunk.indexOf(this._prefix);
+        let prefixIndex = chunk.indexOf(this.bufferPrefix);
+
         while (prefixIndex >= 0) {
-            let headerIndex = this._headers.indexOf(Number(chunk[prefixIndex + 1]));
+            let headerIndex = this.bufferHeaders.indexOf(Number(chunk[prefixIndex + 1]));
+
             if (headerIndex >= 0) {
-                this.push(Buffer.concat(this._queueChunk));
-                this._queueChunk = [];
+                if (this.bufferQueueChunk.length > 0) {
+                    this.push(Buffer.concat(this.bufferQueueChunk));
+                    this.bufferQueueChunk = [];
+                }
+
                 start = prefixIndex;
-                this._typeFlag = true;
-                let expectedLength = this._array.includes(chunk[prefixIndex + 2]) ? 10 : chunk[prefixIndex + 2];
+                this.bufferTypeFlag = true;
+
+                let expectedLength = this._expectedlen(chunk, prefixIndex);
+
                 if (expectedLength) {
-                    this._length = expectedLength;
-                    this._typeFlag = false;
+                    this.bufferLength = expectedLength;
+                    this.bufferTypeFlag = false;
                 } else {
                     this.reset();
                     return done();
                 }
 
-                if (this._lenCount === this._length - 1) {
-                    this._queueChunk.push(chunk.slice(start, prefixIndex + this._length + 1));
-                    this.push(Buffer.concat(this._queueChunk));
-                    this._queueChunk = [];
-                    start = prefixIndex + this._length + 1;
+                if (this.bufferLength > this.maxBufferSize) {
+                    this.reset();
+                    return done(new Error(`Packet length exceeds maximum buffer size of ${this.maxBufferSize}`));
+                }
+
+                if (this.bufferLenCount === this.bufferLength - 1) {
+                    // complete packet
+                    this.bufferQueueChunk.push(chunk.slice(start, prefixIndex + this.bufferLength + 1));
+                    this.push(Buffer.concat(this.bufferQueueChunk));
+                    this.bufferQueueChunk = [];
+                    start = prefixIndex + this.bufferLength + 1;
                 } else {
-                    this._lenCount++;
+                    // partial packet
+                    this.bufferLenCount++;
                 }
             }
-            prefixIndex = chunk.indexOf(this._prefix, prefixIndex + 1);
+
+            prefixIndex = chunk.indexOf(this.bufferPrefix, prefixIndex + 1);
         }
-        this._queueChunk.push(chunk.slice(start));
+
+        if (this.bufferQueueChunk.reduce((acc, chunk) => acc + chunk.length, 0) > this.maxBufferSize) {
+            this.reset();
+            return done(new Error(`Buffer size exceeds maximum buffer size of ${this.maxBufferSize}`));
+        }
+
+        this.bufferQueueChunk.push(chunk.slice(start));
         done();
     }
 
     _flush(done) {
-        this.push(Buffer.concat(this._queueChunk));
+        if (this.bufferQueueChunk.length > 0) {
+            this.push(Buffer.concat(this.bufferQueueChunk));
+            this.bufferQueueChunk = [];
+        }
         this.reset();
         done();
     }
-}
 
+    _expectedlen(chunk, i) {
+        let header = HEDBUFFER.includes(chunk[i + 1]);
+        let length = LENBUFFER.includes(chunk[i + 2]);
+
+        return (header && length) ? 10 : chunk[i + 2];
+    }
+}
 
 class rs485 {
     constructor() {
@@ -451,6 +483,7 @@ class rs485 {
                 topic = `homeassistant/${evCmt}/bestin_wallpad/${device}_${room}/config`;
                 payload = {
                     name: `bestin_${device}_${room}`,
+                    cmd_t: `${prefix}/${device}/${room}/${name}/command`,
                     stat_t: `${prefix}/${device}/${room}/${name}/state`,
                     uniq_id: `bestin_${device}_${room}`,
                     ic: "mdi:elevator",
@@ -508,6 +541,10 @@ class rs485 {
     }
 
     createConnection(options, name) {
+        if (options.path === "" && options.address === "") {
+            logger.warn(`${name} connection disabled!`);
+            return;
+        }
         logger.info(`initializing ${options.type} :: ${name}...`);
         if (options.type === 'serial') {
             this._connection = new SerialPort({
@@ -551,25 +588,25 @@ class rs485 {
         return this._connection;
     }
 
-    packetHandle(data) {   
+    packetHandle(data) {
+        //console.log(data.toString('hex'))
         this._lastReceive = new Date();
         if (data[0] === 0x02 && data[1] !== 0x41) {
             this._syncTime = this._lastReceive;
             this._timestamp = data[4];
         }
 
-        const receivedMsg = this._receivedMsgs.find(e => e.codeHex.equals(data)) || {
+        const { _receivedMsgs } = this;
+        const receivedMsg = _receivedMsgs.find(({ codeHex }) => codeHex.equals(data)) || {
             code: data.toString('hex'),
             codeHex: data,
             count: 0,
-            info: MSG_INFO.filter(e => {
-                if (e.length === 10) {
-                    const header = parseInt(data.subarray(0, 3).toString('hex'), 16);
-                    return e.header == header;
-                } else {
-                    const header = parseInt(data.subarray(0, 4).toString('hex'), 16);
-                    return String(e.header).includes(header) && e.length == data[2];
-                }
+            info: MSG_INFO.filter(({ header, length }) => {
+                const expectLength = data[2] === data.length ? 4 : 3;
+                const actualLength = data.length;
+                const actualHeader = parseInt(data.subarray(0, expectLength).toString('hex'), 16);
+
+                if (header === actualHeader && length === actualLength) return actualHeader;
             }),
         };
         receivedMsg.checksum = this.verifyCheckSum(data);
@@ -578,7 +615,7 @@ class rs485 {
         receivedMsg.lastReceive = this._lastReceive;
         receivedMsg.timeslot = this._lastReceive - this._syncTime;
 
-        if (!receivedMsg.checksum) {
+        if (!Boolean(receivedMsg.checksum)) {
             logger.error(`checksum error: ${receivedMsg.code}, ${receivedMsg.checksum.toString(16)}`);
             return;
         }
@@ -592,7 +629,6 @@ class rs485 {
             if (callback) callback(receivedMsg);
             this._serialCmdQueue.splice(foundIdx, 1);
         }
-
         for (const msgInfo of receivedMsg.info) {
             if (msgInfo.parseToProperty) {
                 const propArray = msgInfo.parseToProperty(data);
@@ -848,7 +884,7 @@ class rs485 {
         const data = isV1 ? cookieJson : res;
 
         //if (!fs.existsSync('./session.json')) {
-            fs.writeFileSync('./session.json', JSON.stringify(data));
+        fs.writeFileSync('./session.json', JSON.stringify(data));
         logger.info(`session.json file write successful!`);
         //}
 
@@ -943,11 +979,11 @@ class rs485 {
         const req = https.request(url, res => {
 
             res.on('data', d => {
-                const resStr = d.toString(); 
-                const resLines = resStr.split('\n'); 
+                const resStr = d.toString();
+                const resLines = resStr.split('\n');
 
                 const evEvent = resLines[1].substring(7);
-                const evInfo = JSON.parse(resLines[2].substring(5)); 
+                const evInfo = JSON.parse(resLines[2].substring(5));
 
                 if (evInfo.address !== CONFIG.server.address) {
                     //logger.warn('unable to find information on the elevator for the generation');
@@ -959,7 +995,7 @@ class rs485 {
 
                     this.updateProperty(device, room, 'call', state);
                 }
-                
+
                 if (evEvent || evEvent == null) {
                     const device = 'evdirection';
                     const room = '1';
@@ -1004,9 +1040,11 @@ class rs485 {
 
             if (unit !== 'all') {
                 this.updateProperty(device, room, unit.replace(/switch/g, 'power'), state);
-            } else { for (const i of ['power1', 'power2', 'power3']) {
-                this.updateProperty(device, room, i, state);
-            } }
+            } else {
+                for (const i of ['power1', 'power2', 'power3']) {
+                    this.updateProperty(device, room, i, state);
+                }
+            }
         });
     }
 
