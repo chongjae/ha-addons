@@ -24,7 +24,7 @@
             "type": "socket",
             "path": "",
             "address": "",
-            "port": 8889
+            "port": 8899
         },
         "control": {
             "type": "socket",
