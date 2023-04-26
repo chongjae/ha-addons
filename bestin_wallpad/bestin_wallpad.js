@@ -28,8 +28,8 @@ const {
     EVSTATE,
     VENTTEMP,
     VENTTEMPI,
-    LENBUFFER,
-    HEDBUFFER,
+    //LENBUFFER,
+    //HEDBUFFER,
     OnOff
 } = require('./const.js');
 
@@ -166,6 +166,7 @@ const MSG_INFO = [
     },
 ];
 
+class CustomParser extends Transform {
     constructor(options) {
         super(options);
         this.resetBuffer();
@@ -234,6 +235,7 @@ const MSG_INFO = [
         }
     }
 }
+
 
 class rs485 {
     constructor() {
