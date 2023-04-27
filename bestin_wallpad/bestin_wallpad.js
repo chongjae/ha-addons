@@ -5,7 +5,7 @@
 
 const logger = require('./logger.js');
 const SerialPort = require('serialport').SerialPort;
-const CONFIG = require('/data/options.json');
+const CONFIG = require('./config.json').options;
 
 const Transform = require('stream').Transform;
 
@@ -97,7 +97,7 @@ const MSG_INFO = [
                 props.push({ device: 'light', room: b[5] & 0x0f, name: `power${i + 1}`, value: (b[6] & (1 << i)) ? 'on' : 'off' })
             }
             props.push({ device: 'light', room: b[5] & 0x0f, name: 'batch', value: (b[6] & 0x0F) ? 'on' : 'off' },
-                { device: 'light', room: 'all', name: 'batch', value: (b[6] << 1) ? 'on' : 'off' });
+                { device: 'light', room: 'all', name: 'batch', value: (b[6] << 4 & 1) ? 'on' : 'off' });
 
             return props;
         }
@@ -564,7 +564,7 @@ class rs485 {
                 encoding: 'hex'
             });
 
-            this._connection.pipe(new CustomParser()).on('data', this.packetHandle.bind(this));
+            this._connection.pipe(new CustomParser()).on('data', this.handlePacket.bind(this));
             this._connection.on('open', () => {
                 logger.info(`successfully opened ${name} port: ${options.path}`);
             });
@@ -590,74 +590,108 @@ class rs485 {
                     this._connection.connect(options.port, options.address);
                 }
             });
-            this._connection.pipe(new CustomParser()).on('data', this.packetHandle.bind(this));
+            this._connection.pipe(new CustomParser()).on('data', this.handlePacket.bind(this));
         }
         return this._connection;
     }
 
-    packetHandle(packet) {
+    handlePacket(packet) {
         //console.log(packet.toString('hex'))
         this._lastReceive = new Date();
+
         if (packet[0] === 0x02 && packet[1] !== 0x41) {
             this._syncTime = this._lastReceive;
             this._timestamp = packet[4];
         }
 
-        const { _receivedMsgs } = this;
-        const receivedMsg = _receivedMsgs.find(({ codeHex }) => codeHex.equals(packet)) || {
-            code: packet.toString('hex'),
-            codeHex: packet,
-            count: 0,
-            info: MSG_INFO.filter(({ header, length }) => {
-                const expectLength = packet[2] === packet.length ? 4 : 3;
-                const actualLength = packet.length;
-                const actualHeader = parseInt(packet.subarray(0, expectLength).toString('hex'), 16);
-
-                if (header === actualHeader && length === actualLength) return actualHeader;
-            }),
-        };
-        receivedMsg.checksum = this.verifyCheckSum(packet);
+        const receivedMsg = this.findOrCreateReceivedMsg(packet);
         receivedMsg.count++;
         receivedMsg.lastlastReceive = receivedMsg.lastReceive;
         receivedMsg.lastReceive = this._lastReceive;
         receivedMsg.timeslot = this._lastReceive - this._syncTime;
 
-        if (!receivedMsg.checksum) {
-            //logger.error(`checksum error: ${receivedMsg.code}, ${receivedMsg.checksum}`);
+        //console.log(receivedMsg.isValid)
+        if (!receivedMsg.isValid) {
+            logger.error(`checksum error: ${receivedMsg.code}, ${receivedMsg.isValid}`);
             return;
         }
 
-        const foundIdx = this._serialCmdQueue.findIndex(e =>
-            (e.cmdHex[1] === packet[1]) && (([0x81, 0x82, 0x83].includes(packet[2])) || ([0x81, 0X82, 0x92].includes(packet[3])))
-        );
+        const foundIdx = this.findCommandIndex(packet, receivedMsg);
         if (foundIdx > -1) {
-            logger.info(`success command: ${this._serialCmdQueue[foundIdx].device}`);
+            logger.info(`success command: ${this._serialCmdQueue[foundIdx].device}, command idx: ${foundIdx}`);
             const { callback, device } = this._serialCmdQueue[foundIdx];
             if (callback) callback(receivedMsg);
             this._serialCmdQueue.splice(foundIdx, 1);
         }
-        for (const msgInfo of receivedMsg.info) {
-            if (msgInfo.parseToProperty) {
-                const propArray = msgInfo.parseToProperty(packet);
-                for (const { device, room, name, value } of propArray) {
-                    this.updateProperty(device, room, name, value, foundIdx > -1);
-                }
-            }
-        }
 
-        //if (CONFIG.rs485.dump_time > 0) {
-        //    let count = 0;
-        //    logger.info(`packet dump set dump time: ${CONFIG.rs485.dump_time}s`)
-        //    const intervalId = setInterval(() => {
-        //        fs.writeFileSync('logs/packet_dump.txt', packet.toString('hex') + '\n', { flag: 'a' });
-        //        count = count + 1;
-        //        if (count === CONFIG.rs485.dump_time) {
-        //            logger.info('packet dump finish. to file packet_dump.txt')
-        //            clearInterval(intervalId);
-        //        }
-        //    }, 1000);
-        //}
+        for (const msgInfo of receivedMsg.validMsgInfos) {
+            this.updateProperties(msgInfo, packet, foundIdx > -1);
+        }
     }
+
+    findOrCreateReceivedMsg(packet) {
+        const { _receivedMsgs } = this;
+        const codeHex = Buffer.from(packet);
+
+        const found = _receivedMsgs.find(({ codeHex: existingCodeHex }) => existingCodeHex.equals(codeHex));
+        if (found) return found;
+
+        const code = codeHex.toString('hex');
+        const expectLength = packet[2] === packet.length ? 4 : 3;
+        const actualLength = packet.length;
+        const actualHeader = parseInt(packet.subarray(0, expectLength).toString('hex'), 16);
+
+        const validMsgInfos = MSG_INFO.filter(({ header, length }) => {
+            if (header === actualHeader && length === actualLength) return actualHeader;
+        });
+
+        const isValid = this.verifyCheckSum(packet);
+        const receivedMsg = {
+            code,
+            codeHex,
+            count: 0,
+            validMsgInfos,
+            //isValid,
+        };
+        receivedMsg.isValid = receivedMsg.validMsgInfos[0] ? isValid : true;
+        _receivedMsgs.push(receivedMsg);
+        return receivedMsg;
+    }
+
+    findCommandIndex(packet, msg) {
+        const [byte1, byte2, byte3, byte4] = packet;
+        return this._serialCmdQueue.findIndex(({ cmdHex: [b1, b2], device }) => {
+            const b3 = msg.codeHex[2];
+            const b4 = msg.codeHex[3];
+
+            return (
+                b2 === byte2 &&
+                ((['gas', 'fan', 'doorlock'].includes(device) && byte3 === b3) || byte4 === b4)
+            );
+        });
+    }
+
+    updateProperties(msgInfo, packet, isCommandResponse) {
+        if (!msgInfo.parseToProperty) return;
+
+        const propArray = msgInfo.parseToProperty(packet);
+        for (const { device, room, name, value } of propArray) {
+            this.updateProperty(device, room, name, value, isCommandResponse);
+        }
+    }
+
+    //if (CONFIG.rs485.dump_time > 0) {
+    //    let count = 0;
+    //    logger.info(`packet dump set dump time: ${CONFIG.rs485.dump_time}s`)
+    //    const intervalId = setInterval(() => {
+    //        fs.writeFileSync('logs/packet_dump.txt', packet.toString('hex') + '\n', { flag: 'a' });
+    //        count = count + 1;
+    //        if (count === CONFIG.rs485.dump_time) {
+    //            logger.info('packet dump finish. to file packet_dump.txt')
+    //            clearInterval(intervalId);
+    //        }
+    //    }, 1000);
+    //}
 
     addCommandToQueue(cmdHex, device, room, name, value, callback) {
         const serialCmd = {
@@ -711,7 +745,7 @@ class rs485 {
             this._serialCmdQueue.push(serialCmd);
             setTimeout(() => this.processCommand(serialCmd), 100);
         } else {
-            logger.warn(`maximum retries ${CONFIG.rs485.max_retry} times exceeded for command`);
+            logger.warn(`command(${serialCmd.device}) has exceeded the maximum retry limit of ${CONFIG.rs485.max_retry} times`);
             if (serialCmd.callback) {
                 serialCmd.callback.call(this);
             }
