@@ -166,73 +166,97 @@ const MSG_INFO = [
     },
 ];
 
+
 class CustomParser extends Transform {
     constructor(options) {
         super(options);
-        this.resetBuffer();
+        this.reset();
     }
 
-    resetBuffer() {
+    reset() {
         this.bufferQueue = [];
-        this.bufferLengthCount = 0;
-        this.expectedBufferLength = undefined;
-        this.isHeaderFound = false;
-        this.prefixBuffer = new Uint8Array([0x02]);
-        this.headerBuffer = new Uint8Array([0x31, 0x41, 0x42, 0x17, 0xD1, 0x28, 0x61]);
+        this.lengthCount = 0;
+        this.expectedLength = undefined;
+        this.isExpectedLength = false;
+        this.startSequence = new Uint8Array([0x02]);
+        this.headerSequence = new Uint8Array([0x17, 0x28, 0x31, 0x41, 0x42, 0x61, 0xD1]);
     }
 
     _transform(chunk, encoding, done) {
+        let remainingChunk = chunk;
         let start = 0;
-        let prefixIndex = chunk.indexOf(this.prefixBuffer);
+        let prefixIndex = remainingChunk.indexOf(this.startSequence);
+
         while (prefixIndex >= 0) {
-            let headerIndex = this.headerBuffer.indexOf(chunk[prefixIndex + 1]);
+            let headerIndex = this.headerSequence.indexOf(remainingChunk[prefixIndex + 1]);
+
             if (headerIndex >= 0) {
-                this.pushBufferedData();
-                this.bufferQueue = [];
+                if (this.bufferQueue.length > 0) {
+                    this.push(Buffer.concat(this.bufferQueue));
+                    this.bufferQueue = [];
+                }
+
                 start = prefixIndex;
-                this.isHeaderFound = true;
-                let expectedLength = this.parseExpectedLength(chunk, prefixIndex);
-                if (expectedLength) {
-                    this.expectedBufferLength = expectedLength;
-                    this.isHeaderFound = false;
+                this.isExpectedLength = true;
+                let expectedLength = this.getExpectedLength(remainingChunk, prefixIndex);
+
+                if (expectedLength > 0) {
+                    this.expectedLength = expectedLength;
+                    this.isExpectedLength = false;
                 } else {
-                    this.resetBuffer();
+                    this.reset();
                     return done();
                 }
-                if (this.bufferLengthCount === this.expectedBufferLength - 1) {
-                    this.bufferQueue.push(chunk.slice(start, prefixIndex + this.expectedBufferLength + 1));
-                    this.pushBufferedData();
+
+                if (this.lengthCount + remainingChunk.length - (prefixIndex + this.expectedLength) >= 0) {
+                    let end = prefixIndex + this.expectedLength;
+                    this.bufferQueue.push(remainingChunk.slice(start, end));
+                    this.push(Buffer.concat(this.bufferQueue));
                     this.bufferQueue = [];
-                    start = prefixIndex + this.expectedBufferLength + 1;
+
+                    remainingChunk = remainingChunk.slice(end);
+                    prefixIndex = remainingChunk.indexOf(this.startSequence);
+                    start = 0;
+                    this.lengthCount = 0;
                 } else {
-                    this.bufferLengthCount++;
+                    this.bufferQueue.push(remainingChunk.slice(start));
+                    this.lengthCount += remainingChunk.length - prefixIndex;
+                    remainingChunk = Buffer.alloc(0);
                 }
             }
-            prefixIndex = chunk.indexOf(this.prefixBuffer, prefixIndex + 1);
+
+            prefixIndex = remainingChunk.indexOf(this.startSequence, prefixIndex + 1);
         }
-        this.bufferQueue.push(chunk.slice(start));
+
+        this.bufferQueue.push(remainingChunk.slice(start));
+
+        if (this.bufferQueue.length > 1) {
+            this.push(Buffer.concat(this.bufferQueue.slice(0, -1)));
+            this.bufferQueue = [this.bufferQueue[this.bufferQueue.length - 1]];
+        }
+
         done();
     }
 
     _flush(done) {
-        this.pushBufferedData();
-        this.resetBuffer();
+        if (this.bufferQueue.length > 0) {
+            this.push(Buffer.concat(this.bufferQueue));
+            this.bufferQueue = [];
+        }
+        this.reset();
         done();
     }
 
-    parseExpectedLength(chunk, i) {
-        let isHeaderValid = this.headerBuffer.includes(chunk[i + 1]);
-        let expectedLength = chunk[i + 2];
-        if (isHeaderValid && expectedLength <= 10) {
-            return 10;
+    getExpectedLength(chunk, i) {
+        //console.log(chunk[i + 1].toString(16), chunk[i + 2].toString(16))
+        let expectedLength = 0;
+        if ([0x31, 0x41].includes(chunk[i + 1]) && [0x00, 0x02, 0x80, 0x82].includes(chunk[i + 2])) {
+            expectedLength = 10;
+        } else if (chunk[i + 1] === 0x61) {
+            expectedLength = 10;
         }
-        return expectedLength;
-    }
 
-    pushBufferedData() {
-        if (this.bufferQueue.length > 0) {
-            this.push(Buffer.concat(this.bufferQueue));
-        }
+        return expectedLength === 10 ? 10 : chunk[i + 2];
     }
 }
 
@@ -505,22 +529,22 @@ class rs485 {
 
     // 패킷 체크섬 검증
     verifyCheckSum(packet) {
-        let result = 0x03;
-        for (let i = 0; i < packet.length; i++) {
-            result ^= packet[i];
-            result = (result + 1) & 0xFF;
+        let sum = 3;
+        for (let i = 0; i < packet.length - 1; i++) {
+            sum ^= packet[i];
+            sum = (sum + 1) & 0xFF;
         }
-        return result;
+        return sum === packet[packet.length - 1];
     }
 
     // 명령 패킷 마지막 바이트(crc) 생성
     generateCheckSum(packet) {
-        let result = 0x03;
+        let sum = 3;
         for (let i = 0; i < packet.length - 1; i++) {
-            result ^= packet[i];
-            result = (result + 1) & 0xFF;
+            sum ^= packet[i];
+            sum = (sum + 1) & 0xFF;
         }
-        return result;
+        return sum;
     }
 
     createConnection(options, name) {
@@ -571,40 +595,40 @@ class rs485 {
         return this._connection;
     }
 
-    packetHandle(data) {
-        //console.log(data.toString('hex'))
+    packetHandle(packet) {
+        //console.log(packet.toString('hex'))
         this._lastReceive = new Date();
-        if (data[0] === 0x02 && data[1] !== 0x41) {
+        if (packet[0] === 0x02 && packet[1] !== 0x41) {
             this._syncTime = this._lastReceive;
-            this._timestamp = data[4];
+            this._timestamp = packet[4];
         }
 
         const { _receivedMsgs } = this;
-        const receivedMsg = _receivedMsgs.find(({ codeHex }) => codeHex.equals(data)) || {
-            code: data.toString('hex'),
-            codeHex: data,
+        const receivedMsg = _receivedMsgs.find(({ codeHex }) => codeHex.equals(packet)) || {
+            code: packet.toString('hex'),
+            codeHex: packet,
             count: 0,
             info: MSG_INFO.filter(({ header, length }) => {
-                const expectLength = data[2] === data.length ? 4 : 3;
-                const actualLength = data.length;
-                const actualHeader = parseInt(data.subarray(0, expectLength).toString('hex'), 16);
+                const expectLength = packet[2] === packet.length ? 4 : 3;
+                const actualLength = packet.length;
+                const actualHeader = parseInt(packet.subarray(0, expectLength).toString('hex'), 16);
 
                 if (header === actualHeader && length === actualLength) return actualHeader;
             }),
         };
-        receivedMsg.checksum = this.verifyCheckSum(data);
+        receivedMsg.checksum = this.verifyCheckSum(packet);
         receivedMsg.count++;
         receivedMsg.lastlastReceive = receivedMsg.lastReceive;
         receivedMsg.lastReceive = this._lastReceive;
         receivedMsg.timeslot = this._lastReceive - this._syncTime;
 
-        if (!Boolean(receivedMsg.checksum)) {
-            logger.error(`checksum error: ${receivedMsg.code}, ${receivedMsg.checksum.toString(16)}`);
+        if (!receivedMsg.checksum) {
+            //logger.error(`checksum error: ${receivedMsg.code}, ${receivedMsg.checksum}`);
             return;
         }
 
         const foundIdx = this._serialCmdQueue.findIndex(e =>
-            (e.cmdHex[1] === data[1]) && (([0x81, 0x82, 0x83].includes(data[2])) || ([0x81, 0X82, 0x92].includes(data[3])))
+            (e.cmdHex[1] === packet[1]) && (([0x81, 0x82, 0x83].includes(packet[2])) || ([0x81, 0X82, 0x92].includes(packet[3])))
         );
         if (foundIdx > -1) {
             logger.info(`success command: ${this._serialCmdQueue[foundIdx].device}`);
@@ -614,7 +638,7 @@ class rs485 {
         }
         for (const msgInfo of receivedMsg.info) {
             if (msgInfo.parseToProperty) {
-                const propArray = msgInfo.parseToProperty(data);
+                const propArray = msgInfo.parseToProperty(packet);
                 for (const { device, room, name, value } of propArray) {
                     this.updateProperty(device, room, name, value, foundIdx > -1);
                 }
@@ -625,7 +649,7 @@ class rs485 {
         //    let count = 0;
         //    logger.info(`packet dump set dump time: ${CONFIG.rs485.dump_time}s`)
         //    const intervalId = setInterval(() => {
-        //        fs.writeFileSync('logs/packet_dump.txt', data.toString('hex') + '\n', { flag: 'a' });
+        //        fs.writeFileSync('logs/packet_dump.txt', packet.toString('hex') + '\n', { flag: 'a' });
         //        count = count + 1;
         //        if (count === CONFIG.rs485.dump_time) {
         //            logger.info('packet dump finish. to file packet_dump.txt')
