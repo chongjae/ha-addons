@@ -5,7 +5,7 @@
 
 const logger = require('./logger.js');
 const SerialPort = require('serialport').SerialPort;
-const CONFIG = require('./config.json').options;
+const CONFIG = require('/data/options.json');
 
 const Transform = require('stream').Transform;
 
