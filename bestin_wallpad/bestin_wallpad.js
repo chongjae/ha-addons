@@ -178,14 +178,14 @@ class CustomParser extends Transform {
         this.lengthCount = 0;
         this.expectedLength = undefined;
         this.isExpectedLength = false;
-        this.startSequence = new Uint8Array([0x02]);
+        //this.startSequence = new Uint8Array([0x02]);
         this.headerSequence = new Uint8Array([0x17, 0x28, 0x31, 0x41, 0x42, 0x61, 0xD1]);
     }
 
     _transform(chunk, encoding, done) {
         let remainingChunk = chunk;
         let start = 0;
-        let prefixIndex = remainingChunk.indexOf(this.startSequence);
+        let prefixIndex = remainingChunk.indexOf(0x02);
 
         while (prefixIndex >= 0) {
             let headerIndex = this.headerSequence.indexOf(remainingChunk[prefixIndex + 1]);
@@ -285,6 +285,9 @@ class rs485 {
             port: CONFIG.mqtt.port,
             username: CONFIG.mqtt.username,
             password: CONFIG.mqtt.password,
+            keepalive: 60, 
+            reconnect: true, 
+            reconnectInterval: 1000 
         });
 
         client.on('connect', () => {
