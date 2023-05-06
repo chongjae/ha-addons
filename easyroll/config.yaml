@@ -1,36 +1,31 @@
-name: "Easyroll Blind"
-version: "1.0.0"
-slug: "easyroll"
-description: "Add-on for Easyroll Blind"
+name: Easyroll Blind
+version: 1.0.0
+slug: easyroll
+description: Add-on for Easyroll Blind
 arch:
-  - "armhf"
-  - "armv7"
-  - "aarch64"
-  - "amd64"
-  - "i386"
+  - armhf
+  - armv7
+  - aarch64
+  - amd64
+  - i386
 map:
-  "share:rw"
-url: "https://github.com/harwin1/ha-addons"
-startup: "application"
-boot: "auto"
+  - share
+url: https://github.com/harwin1/ha-addons
+startup: application
+boot: auto
 uart: true
 options:
+  blinds: []
+  mqtts: []
   scan_interval: 300  
   command_interval: 30
-  blind: 
-  - "192.168.1.1"
-  mqtt: 
-  server: "192.168.1.1"
-  port: 1883
-  username: ""
-  password: ""
 schema:
-  scan_interval: "int"
-  command_interval: "int"
-  blind: 
-  - "str"
-  mqtt: 
-  server: "str"
-  port: "int"
-  username: str?
-  password: str?
+  blinds:
+    - str
+  mqtts: 
+    - server: str
+    - port: int
+    - username: str?
+    - password: str?
+  scan_interval: int
+  command_interval: int
