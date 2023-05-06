@@ -1,17 +1,16 @@
 FROM node:14-alpine
 
+COPY package.json /
+COPY easyroll_blind.js /
+
 RUN apk upgrade --no-cache \
     && apk add --no-cache make gcc g++ python3 linux-headers udev \
     && apk add --no-cache git
     
-RUN mkdir -p /share/easyroll
-WORKDIR /share/easyroll
-
-COPY package*.json ./
+WORKDIR /share
 
 RUN npm install --silent
+RUN chmod a+x /run.sh
 
-COPY . .
-
-CMD ["node", "/share/easyroll/easyroll_blind.js"]
+CMD ["/run.sh"]
 
