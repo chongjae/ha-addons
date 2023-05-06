@@ -5,12 +5,11 @@ RUN apk upgrade --no-cache \
     && apk add --no-cache git
 
 COPY package.json /
+COPY easyroll_blind.js /share/easyroll/
 
 RUN npm install --silent
 
-RUN mkdir -p /share/easyroll
-WORKDIR share/easyroll/
-
+WORKDIR /share/easyroll/
 COPY . .
 
 CMD ["node", "/share/easyroll/easyroll_blind.js"]
