@@ -9,6 +9,7 @@ RUN npm install --silent
 
 RUN mkdir -p /share/easyroll
 
-COPY easyroll_blind.js share/easyroll/
+COPY easyroll_blind.js /share/easyroll/
 
 CMD ["node", "/share/easyroll/easyroll_blind.js"]
+
