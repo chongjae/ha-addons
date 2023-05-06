@@ -9,4 +9,4 @@ fi
 
 echo "INFO: Running EasyRoll Smart Blind Addon..."
 cd $SHARE_DIR
-node easyroll_blind.j
+node easyroll_blind.js
