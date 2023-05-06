@@ -1,7 +1,7 @@
-name: Easyroll Blind
+name: EasyRoll Smart Blind
 version: 1.0.0
 slug: easyroll
-description: Add-on for Easyroll Blind
+description: Add-on for EasyRoll Smart Blind
 arch:
   - armhf
   - armv7
@@ -9,7 +9,7 @@ arch:
   - amd64
   - i386
 map:
-  - share
+  - share:rw
 url: https://github.com/harwin1/ha-addons
 startup: application
 boot: auto
