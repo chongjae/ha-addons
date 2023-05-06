@@ -6,10 +6,10 @@ RUN apk upgrade --no-cache \
 
 COPY package.json /
 
-RUN npm install
+RUN npm install --silent
 
 RUN mkdir -p /share/easyroll
-WORKDIR /share/easyroll
+WORKDIR share/easyroll/
 
 COPY . .
 
