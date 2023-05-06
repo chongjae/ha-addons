@@ -4,13 +4,13 @@ RUN apk upgrade --no-cache \
     && apk add --no-cache make gcc g++ python3 linux-headers udev \
     && apk add --no-cache git
 
-WORKDIR /share
-
-COPY package*.json ./
+COPY package.json /
 
 RUN npm install
 
-COPY . .
+RUN mkdir -p /share/easyroll
+WORKDIR /share/easyroll
 
-# 애플리케이션을 실행합니다.
-CMD ["node", "easyroll_blind.js"]
+COPY easyroll_blind.js /
+
+CMD ["node", "/share/easyroll/easyroll_blind.js"]
