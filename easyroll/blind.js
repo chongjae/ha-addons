@@ -9,7 +9,7 @@ const fs = require('fs');
 const yaml = require('js-yaml');
 //const ini = require('ini');
 //const conf = ini.parse(fs.readFileSync('/easyroll/config.ini', 'utf-8'));
-const conf = yaml.load(fs.readFileSync('/data/options.json', 'utf8'))['options']
+const conf = yaml.load(fs.readFileSync('/data/options.json', 'utf8'))
 
 const stateUrl = `http://{}:20318/lstinfo`;
 const actionUrl = `http://{}:20318/action`;
@@ -120,20 +120,26 @@ function easyrollCmd(url, id) {
 };
 
 function easyrollParse(result) {
-    let action = "";
+    const STATUS_CLOSED = 'closed';
+    const STATUS_OPEN = 'open';
+    const STATUS_CLOSING = 'closing';
+    const STATUS_OPENING = 'opening';
+    const STATUS_STOPPED = 'stopped';
 
-    if (result.position == 100) {
-        action = 'closed';
+    let action = '';
+
+    if (mqttRemain === 'CLOSE') {
+        action = STATUS_CLOSING;
+    } else if (mqttRemain === 'OPEN') {
+        action = STATUS_OPENING;
+    } else if (mqttRemain === 'STOP') {
+        action = STATUS_STOPPED;
     } else if (result.position == 0) {
-        action = 'open';
-    } else if (result.position < 100 && !['OPEN', 'CLOSE', 'STOP'].includes(mqttRemain)) {
-        action = 'open';
-    } else if (mqttRemain == 'CLOSE') {
-        action = 'closing';
-    } else if (mqttRemain == 'OPEN') {
-        action = 'opening';
-    } else if (mqttRemain == 'STOP') {
-        action = 'stopped';
+        action = STATUS_OPEN;
+    } else if (result.position == 100) {
+        action = STATUS_CLOSED;
+    } else {
+        action = STATUS_OPEN;
     }
 
     if (_mqttReady != true) return;
