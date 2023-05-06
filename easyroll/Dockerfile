@@ -1,7 +1,6 @@
 FROM node:14-alpine
 
-COPY package.json /
-COPY easyroll_blind.js /
+COPY easyroll_blind.js package.json /
 
 RUN apk upgrade --no-cache \
     && apk add --no-cache make gcc g++ python3 linux-headers udev \
@@ -9,7 +8,7 @@ RUN apk upgrade --no-cache \
     
 WORKDIR /share
 
-RUN npm install --silent
+RUN npm install 
 RUN chmod a+x /run.sh
 
 CMD ["/run.sh"]
