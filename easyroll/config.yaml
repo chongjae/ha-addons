@@ -1,7 +1,7 @@
 name: "Easyroll Blind"
 version: "1.0.0"
 slug: "easyroll"
-description: "Add-on for Easyroll Blind"
+description: "Add-on for Easyroll Blind "
 arch:
   - "armhf"
   - "armv7"
@@ -31,5 +31,5 @@ schema:
   mqtt: 
     server: "str"
     port: "int"
-    username: str?
-    password: str?
+    username: "str"
+    password: "str"
