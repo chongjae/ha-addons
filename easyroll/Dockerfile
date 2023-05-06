@@ -1,6 +1,6 @@
 FROM node:14-alpine
 
-COPY run.sh package.json /
+COPY run.sh /
 COPY easyroll_blind.js /
 
 RUN apk upgrade --no-cache \
@@ -9,8 +9,9 @@ RUN apk upgrade --no-cache \
     
 WORKDIR /share
 
+COPY package.json /
 RUN npm install 
-RUN chmod a+x /run.sh
 
+RUN chmod a+x /run.sh
 CMD ["/run.sh"]
 
