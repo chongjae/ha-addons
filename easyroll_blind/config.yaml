@@ -19,8 +19,8 @@ options:
   mqtts: 
     - server: 192.168.1.1
       port: 1883
-      username: 
-      password: 
+      username: null
+      password: null
   scan_interval: 300  
   command_interval: 30
 schema:
