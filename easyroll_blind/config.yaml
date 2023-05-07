@@ -10,7 +10,7 @@ arch:
   - i386
 map:
   - share:rw
-url: https://github.com/harwin1/ha-addons
+url: https://github.com/harwin1/ha-addons/blob/main/easyroll_blind
 startup: application
 boot: auto
 uart: true
