@@ -24,8 +24,8 @@ schema:
     - str
   mqtts: 
     - server: str
-    - port: int
-    - username: str?
-    - password: str?
+      port: int
+      username: str?
+      password: str?
   scan_interval: int
   command_interval: int
