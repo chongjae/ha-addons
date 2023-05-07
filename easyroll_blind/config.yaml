@@ -16,12 +16,15 @@ boot: auto
 uart: true
 options:
   blinds: []
-  mqtts: []
+  mqtts: 
+    - server: 192.168.1.1
+      port: 1883
+      username: null
+      password: null
   scan_interval: 300  
   command_interval: 30
 schema:
-  blinds:
-    - str
+  blinds: str
   mqtts: 
     - server: str
       port: int
