@@ -5,14 +5,12 @@ const mqtt = require('mqtt');
 const logger = require('simple-node-logger').createSimpleLogger();
 
 ////////////////////////////////
-const fs = require('fs');
-const yaml = require('js-yaml');
-const conf = yaml.load(fs.readFileSync('/data/options.json', 'utf8'))
+const conf = require('/data/options.json');
 
 const stateUrl = `http://{}:20318/lstinfo`;
 const actionUrl = `http://{}:20318/action`;
 
-let mqttRemain = [];
+let mqttRemain = '';
 let previous = {};
 
 let _mqttReady = false;
@@ -25,10 +23,10 @@ const parameter = {
 };
 
 const client = mqtt.connect({
-    host: conf.mqtt.server,
-    port: conf.mqtt.port,
-    username: conf.mqtt.username,
-    password: conf.mqtt.password,
+    host: conf.mqtts[0].server,
+    port: conf.mqtts[0].port,
+    username: conf.mqtts[0].username,
+    password: conf.mqtts[0].password,
 });
 logger.info('initialize mqtt...');
 
@@ -56,7 +54,7 @@ client.on('reconnect', () => {
 
 function easyrollFind() {
     let info = [];
-    for (const [idx, addr] of Object.entries(conf.blind)) {
+    for (const [idx, addr] of Object.entries(conf.blinds)) {
         info.push(idx, addr);
     }
     return info;
@@ -125,19 +123,20 @@ function easyrollParse(result) {
     const STATUS_STOPPED = 'stopped';
 
     let action = '';
-
-    if (mqttRemain === 'CLOSE') {
-        action = STATUS_CLOSING;
-    } else if (mqttRemain === 'OPEN') {
-        action = STATUS_OPENING;
-    } else if (mqttRemain === 'STOP') {
-        action = STATUS_STOPPED;
-    } else if (result.position == 0) {
-        action = STATUS_OPEN;
-    } else if (result.position == 100) {
-        action = STATUS_CLOSED;
+    if (result.position != 0 && result.position != 100 && mqttRemain) {
+        if (mqttRemain == 'CLOSE') {
+            action = STATUS_CLOSING;
+        } else if (mqttRemain == 'OPEN') {
+            action = STATUS_OPENING;
+        } else if (mqttRemain == 'STOP') {
+            action = STATUS_STOPPED;
+        }
     } else {
-        action = STATUS_OPEN;
+        if (result.position == 0 || result.position < 100) {
+            action = STATUS_OPEN;
+        } else if (result.position == 100) {
+            action = STATUS_CLOSED;
+        }
     }
 
     if (_mqttReady != true) return;
