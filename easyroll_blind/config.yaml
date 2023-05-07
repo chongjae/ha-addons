@@ -24,7 +24,8 @@ options:
   scan_interval: 300  
   command_interval: 30
 schema:
-  blinds: str
+  blinds: 
+    - str  
   mqtts: 
     - server: str
       port: int
