@@ -7,7 +7,7 @@ const logger = require('simple-node-logger').createSimpleLogger();
 ////////////////////////////////
 const fs = require('fs');
 const yaml = require('js-yaml');
-const conf = yaml.load(fs.readFileSync('/data/options.yaml', 'utf8'))
+const conf = yaml.load(fs.readFileSync('/data/options.json', 'utf8'))
 
 const stateUrl = `http://{}:20318/lstinfo`;
 const actionUrl = `http://{}:20318/action`;
