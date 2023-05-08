@@ -131,8 +131,7 @@ const MSG_INFO = [
     {
         device: 'fan', header: 0x026180, length: 10, request: 'ack',
         parseToProperty: (b) => {
-            let val;
-            if (VENTTEMPI.hasOwnProperty(b[6])) val = VENTTEMPI[b[6]];
+            if (VENTTEMPI.hasOwnProperty(b[6])) var val = VENTTEMPI[b[6]];
             return [{ device: 'fan', room: '1', name: 'power', value: (b[5] ? 'on' : 'off') },
             { device: 'fan', room: '1', name: 'preset', value: b[5] === 0x11 ? 'nature' : val },
             { device: 'fan', room: '1', name: 'timer', value: b[7].toString(10) }];
@@ -178,7 +177,6 @@ class CustomParser extends Transform {
         this.lengthCount = 0;
         this.expectedLength = undefined;
         this.isExpectedLength = false;
-        //this.startSequence = new Uint8Array([0x02]);
         this.headerSequence = new Uint8Array([0x17, 0x28, 0x31, 0x41, 0x42, 0x61, 0xD1]);
     }
 
@@ -215,7 +213,7 @@ class CustomParser extends Transform {
                     this.bufferQueue = [];
 
                     remainingChunk = remainingChunk.slice(end);
-                    prefixIndex = remainingChunk.indexOf(this.startSequence);
+                    prefixIndex = remainingChunk.indexOf(0x02);
                     start = 0;
                     this.lengthCount = 0;
                 } else {
@@ -225,7 +223,7 @@ class CustomParser extends Transform {
                 }
             }
 
-            prefixIndex = remainingChunk.indexOf(this.startSequence, prefixIndex + 1);
+            prefixIndex = remainingChunk.indexOf(0x02, prefixIndex + 1);
         }
 
         this.bufferQueue.push(remainingChunk.slice(start));
@@ -248,7 +246,6 @@ class CustomParser extends Transform {
     }
 
     getExpectedLength(chunk, i) {
-        //console.log(chunk[i + 1].toString(16), chunk[i + 2].toString(16))
         let expectedLength = 0;
         if ([0x31, 0x41].includes(chunk[i + 1]) && [0x00, 0x02, 0x80, 0x82].includes(chunk[i + 2])) {
             expectedLength = 10;
