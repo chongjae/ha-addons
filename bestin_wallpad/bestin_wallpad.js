@@ -147,7 +147,7 @@ const MSG_INFO = [
     {
         device: 'doorlock', header: 0x024180, length: 10, request: 'ack',
         parseToProperty: (b) => {
-            return [{ device: 'doorlock', room: '1', name: 'power', value: (b[5] === 0x52 ? 'off' : 'on') }];
+            return [{ device: 'doorlock', room: '1', name: 'power', value: (b[5] === 0x51 ? 'off' : 'on') }];
         }
     },
 
