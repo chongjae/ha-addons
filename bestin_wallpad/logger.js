@@ -9,7 +9,7 @@ const logLevel = level || 'silly';
 
 // 로그 출력 포맷
 const format = winston.format.combine(
-    winston.format.timestamp({ format: 'YYYY-MM-DD HH:MM:SS' }),
+    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     winston.format.printf(
         (info) => `${info.timestamp} ${info.level.toUpperCase()}: ${info.message}`,
     ),
