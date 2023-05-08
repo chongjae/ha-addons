@@ -53,3 +53,4 @@ switch (level) {
 }
 
 module.exports = logger;
+
