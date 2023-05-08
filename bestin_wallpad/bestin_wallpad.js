@@ -933,8 +933,10 @@ class rs485 {
         //}
 
         const json = JSON.parse(fs.readFileSync('./session.json'));
-        format(isV1 ? V1LIGHTSTATUS : V2LIGHTSTATUS, isV1 ? json.phpsessid : json.url, isV1 ? json.userid : json['access-token'], isV1 ? json.username : null);
-
+        setInterval(()=> {
+            format(isV1 ? V1LIGHTSTATUS : V2LIGHTSTATUS, isV1 ? json.phpsessid : json.url, isV1 ? json.userid : json['access-token'], isV1 ? json.username : null);
+        }, CONFIG.server.scan_interval * 1000);
+        
         const statusUrl = isV1 ? V1LIGHTSTATUS : V2LIGHTSTATUS;
         const lightStatFunc = this.getServerLightStatus.bind(this);
         lightStatFunc(statusUrl, type);
