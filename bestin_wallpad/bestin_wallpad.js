@@ -28,8 +28,6 @@ const {
     EVSTATE,
     VENTTEMP,
     VENTTEMPI,
-    //LENBUFFER,
-    //HEDBUFFER,
     OnOff
 } = require('./const.js');
 
@@ -79,8 +77,9 @@ const MSG_INFO = [
     {
         device: 'fan', header: 0x026100, length: 10, request: 'set',
         setPropertyToMsg: (b, i, n, v) => {
-            if (n === 'power') b[2] = 0x01, b[5] = (v === 'on' ? 0x01 : 0x00), b[6] = 0x01
-            else b[2] = 0x03, b[6] = VENTTEMP[v];
+            if (n === 'power') b[2] = 0x01, b[5] = (v === 'on' ? 0x01 : 0x00), b[6] = 0x01;
+            else if (n === 'timer') b[2] = 0x04, b[7] = v.toString(16);
+            else b[2] = (v === 'nature' ? 0x07 : 0x03), b[6] = VENTTEMP[v];
 
             return b;
         }
@@ -135,7 +134,8 @@ const MSG_INFO = [
             let val;
             if (VENTTEMPI.hasOwnProperty(b[6])) val = VENTTEMPI[b[6]];
             return [{ device: 'fan', room: '1', name: 'power', value: (b[5] ? 'on' : 'off') },
-            { device: 'fan', room: '1', name: 'preset', value: val }];
+            { device: 'fan', room: '1', name: 'preset', value: b[5] === 0x11 ? 'nature' : val },
+            { device: 'fan', room: '1', name: 'timer', value: b[7].toString(10) }];
         }
     },
     {
@@ -431,15 +431,22 @@ class rs485 {
                 };
                 break;
             case 'fan':
-                topic = `homeassistant/fan/bestin_wallpad/fan_${room}/config`;
+                let fanCmt, fanName = "";
+                if (name === "timer") fanCmt = "number", fanName = "timer"
+                else if (name === "power") fanCmt = "fan", fanName = "power"
+
+                topic = `homeassistant/${fanCmt}/bestin_wallpad/fan_${room}/config`;
                 payload = {
-                    name: `bestin_fan_${room}`,
-                    cmd_t: `${prefix}/fan/${room}/power/command`,
-                    stat_t: `${prefix}/fan/${room}/power/state`,
+                    name: `bestin_fan_${fanCmt === "number" ? "timer" : "1"}`,
+                    cmd_t: `${prefix}/fan/${room}/${fanName}/command`,
+                    stat_t: `${prefix}/fan/${room}/${fanName}/state`,
                     pr_mode_cmd_t: `${prefix}/fan/${room}/preset/command`,
                     pr_mode_stat_t: `${prefix}/fan/${room}/preset/state`,
-                    pr_modes: ["low", "medium", "high"],
-                    uniq_id: `bestin_fan_${room}`,
+                    pr_modes: ["low", "medium", "high", "nature"],
+                    uniq_id: `bestin_fan_${fanCmt === "number" ? "timer" : "1"}`,
+                    min: 0,
+                    max: 240,
+                    unit_of_measurement: 'Minute',
                     pl_on: "on",
                     pl_off: "off",
                     device: {
@@ -900,18 +907,18 @@ class rs485 {
     }
 
     loginManagement(res, type) {
-        let format = this.format.bind(this);
+        const format = this.format.bind(this);
 
-        let isV1 = type === 'v1';
+        const isV1 = type === 'v1';
         const cookie = () => {
-            let cookies = res.headers['set-cookie'];
-            let cookieMap = cookies.reduce((acc, cookie) => {
-                let [key, value] = cookie.split('=');
+            const cookies = res.headers['set-cookie'];
+            const cookieMap = cookies.reduce((acc, cookie) => {
+                const [key, value] = cookie.split('=');
                 acc[key] = value.split(';')[0];
                 return acc;
             }, {});
 
-            let cookieJson = {
+            const cookieJson = {
                 phpsessid: cookieMap['PHPSESSID'],
                 userid: cookieMap['user_id'],
                 username: cookieMap['user_name'],
@@ -925,17 +932,20 @@ class rs485 {
         }
 
         if (isV1) var cookieJson = cookie();
-        let data = isV1 ? cookieJson : res;
+        const data = isV1 ? cookieJson : res;
 
-        //if (!fs.existsSync('./session.json')) {
-        fs.writeFileSync('./session.json', JSON.stringify(data));
-        logger.info(`session.json file write successful!`);
-        //}
+        try {
+            fs.writeFileSync('./session.json', JSON.stringify(data));
+            logger.info(`session.json file write successful!`);
+        } catch (err) {
+            logger.error(`session.json file write fail. [${err}]`);
+            return;
+        }
 
-        let json = JSON.parse(fs.readFileSync('./session.json'));
+        const json = JSON.parse(fs.readFileSync('./session.json'));
         
-        let statusUrl = isV1 ? format(V1LIGHTSTATUS, json.phpsessid, json.userid, json.username) : format(V2LIGHTSTATUS, json.url, json['access-token']);
-        let lightStatFunc = this.getServerLightStatus.bind(this);
+        const statusUrl = isV1 ? format(this.reJson(V1LIGHTSTATUS), json.phpsessid, json.userid, json.username) : format(this.reJson(V2LIGHTSTATUS), json.url, json['access-token']);
+        const lightStatFunc = this.getServerLightStatus.bind(this);
         lightStatFunc(statusUrl, type);
         setInterval(lightStatFunc, CONFIG.server.scan_interval * 1000, statusUrl, type);
 
