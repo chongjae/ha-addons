@@ -900,18 +900,18 @@ class rs485 {
     }
 
     loginManagement(res, type) {
-        const format = this.format.bind(this);
+        let format = this.format.bind(this);
 
-        const isV1 = type === 'v1';
+        let isV1 = type === 'v1';
         const cookie = () => {
-            const cookies = res.headers['set-cookie'];
-            const cookieMap = cookies.reduce((acc, cookie) => {
-                const [key, value] = cookie.split('=');
+            let cookies = res.headers['set-cookie'];
+            let cookieMap = cookies.reduce((acc, cookie) => {
+                let [key, value] = cookie.split('=');
                 acc[key] = value.split(';')[0];
                 return acc;
             }, {});
 
-            const cookieJson = {
+            let cookieJson = {
                 phpsessid: cookieMap['PHPSESSID'],
                 userid: cookieMap['user_id'],
                 username: cookieMap['user_name'],
@@ -925,20 +925,17 @@ class rs485 {
         }
 
         if (isV1) var cookieJson = cookie();
-        const data = isV1 ? cookieJson : res;
+        let data = isV1 ? cookieJson : res;
 
         //if (!fs.existsSync('./session.json')) {
         fs.writeFileSync('./session.json', JSON.stringify(data));
         logger.info(`session.json file write successful!`);
         //}
 
-        const json = JSON.parse(fs.readFileSync('./session.json'));
-        setInterval(()=> {
-            format(isV1 ? V1LIGHTSTATUS : V2LIGHTSTATUS, isV1 ? json.phpsessid : json.url, isV1 ? json.userid : json['access-token'], isV1 ? json.username : null);
-        }, CONFIG.server.scan_interval * 1000);
+        let json = JSON.parse(fs.readFileSync('./session.json'));
         
-        const statusUrl = isV1 ? V1LIGHTSTATUS : V2LIGHTSTATUS;
-        const lightStatFunc = this.getServerLightStatus.bind(this);
+        let statusUrl = isV1 ? format(V1LIGHTSTATUS, json.phpsessid, json.userid, json.username) : format(V2LIGHTSTATUS, json.url, json['access-token']);
+        let lightStatFunc = this.getServerLightStatus.bind(this);
         lightStatFunc(statusUrl, type);
         setInterval(lightStatFunc, CONFIG.server.scan_interval * 1000, statusUrl, type);
 
