@@ -16,11 +16,11 @@ const V1LIGHTSTATUS = {
     url: `http://${address}/webapp/data/getHomeDevice.php`,
     headers: {
         'user-agent': 'Mozilla/5.0',
-        'cookie': 'PHPSESSID={0}; user_id={1}; user_name={2}',
+        'cookie': 'PHPSESSID={0}; user_id={1}; user_name={2}'
     },
     qs: {
         req_name: 'remote_access_livinglight',
-        req_action: 'status',
+        req_action: 'status'
     },
 }
 
@@ -45,13 +45,13 @@ const V1LIGHTCMD = {
     headers: {
         'accept': 'application/xml',
         'user-agent': 'Mozilla/5.0',
-        'cookie': 'PHPSESSID={0}; user_id={1}; user_name={2}',
+        'cookie': 'PHPSESSID={0}; user_id={1}; user_name={2}'
     },
     qs: {
         req_name: 'remote_access_livinglight',
         req_action: 'control',
         req_unit_num: '{3}',
-        req_ctrl_action: '{4}',
+        req_ctrl_action: '{4}'
     },
 }
 
@@ -62,7 +62,7 @@ const V2LIGHTCMD = {
     headers: {
         'access-token': '{4}',
         'accept': 'application/json',
-        'user-agent': 'Mozilla/5.0',
+        'user-agent': 'Mozilla/5.0'
     },
 }
 
@@ -80,12 +80,12 @@ const V2ELEVATORCMD = {
 const VENTTEMP = {
     'low': 0x01,
     'medium': 0x02,
-    'high': 0x03,
+    'high': 0x03
 }
 const VENTTEMPI = {
     0x01: 'low',
     0x02: 'medium',
-    0x03: 'high',
+    0x03: 'high'
 }
 
 const OnOff = {
@@ -93,9 +93,6 @@ const OnOff = {
     'doorlock': 'on',
     'lightbatch': 'on'
 }
-
-const LENBUFFER = [0x00, 0x01, 0x02, 0x03, 0x04, 0x80, 0x81, 0x82, 0x83, 0x84]
-const HEDBUFFER = [0x31, 0x41, 0x61]
 
 module.exports = {
     V1LOGIN,
@@ -109,7 +106,5 @@ module.exports = {
     EVSTATE,
     VENTTEMP,
     VENTTEMPI,
-    LENBUFFER,
-    HEDBUFFER,
     OnOff
 };
