@@ -216,7 +216,7 @@ client.on('message', (topic, message) => {
     }
 
     const host = easyrollFind();
-    if (topics[1] === host[0]) {
+    if (topics[1] == host[0]) {
         url.push(host[0], actionUrl.replace('{}', host[1]))
     }
 
