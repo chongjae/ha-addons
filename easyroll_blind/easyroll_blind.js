@@ -54,8 +54,9 @@ client.on('reconnect', () => {
 
 function easyrollFind() {
     let info = [];
-    for (const [idx, addr] of Object.entries(conf.blinds)) {
-        info.push(idx + 1, addr);
+    for (let [idx, addr] of Object.entries(conf.blinds)) {
+        idx = Number(idx) + 1;
+        info.push(idx, addr);
     }
     return info;
 }
