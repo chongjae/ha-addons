@@ -10,7 +10,7 @@ const { Transform } = require('stream');
 const mqtt = require('mqtt');
 const net = require('net');
 
-const Options = require('./config.json').options;
+const Options = require('/data/options.json');
 
 const RS485_DEVICE = [
     ////////////// 상태
