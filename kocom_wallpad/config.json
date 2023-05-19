@@ -1,0 +1,78 @@
+{
+  "name": "KOCOM WallPad RS485 Addon",
+  "version": "1.0.0",
+  "slug": "kocom_wallpad",
+  "description": "코콤 월패드용 애드온입니다.",
+  "arch": [
+    "armhf",
+    "armv7",
+    "aarch64",
+    "amd64",
+    "i386"
+  ],
+  "map": [
+    "share:rw"
+  ],
+  "url": "https://github.com/harwin1/ha-addons",
+  "startup": "application",
+  "boot": "auto",
+  "uart": true,
+  "options": {
+    "serial_mode": "socket",
+    "serial": {
+      "port": "/dev/ttyUSB0",
+      "baudrate": 9600,
+      "databits": 8,
+      "parity": "none",
+      "stopbits": 1
+    },
+    "socket": {
+      "address": "116.32.120.46",
+      "port": 8899
+    },
+    "mqtt": {
+      "server": "116.32.120.46",
+      "port": 1883,
+      "username": "harwin",
+      "password": "mosquitto",
+      "prefix": "kocom",
+      "discovery": true
+    },
+    "rs485": {
+      "max_retry": 20
+    },
+    "log": {
+        "to_file": true,
+        "level": "silly"
+    }
+  },
+  "schema": {
+    "serial_mode": "list(serial|socket)",
+    "serial": {
+      "port": "str",
+      "baudrate": "int",
+      "databits": "int",
+      "parity": "list(none|even|mark|odd|space)",
+      "stopbits": "int"
+    },
+    "socket": {
+      "address": "str",
+      "port": "int"
+    },
+    "mqtt": {
+      "server": "str",
+      "port": "int",
+      "username": "str?",
+      "password": "str?",
+      "prefix": "str",
+      "discovery": "bool"
+    },
+    "rs485": {
+      "max_retry": "int"
+    },
+    "log": {
+        "to_file": "bool",
+        "level": "list(silly|info|error|warn)"
+    }
+  }
+}

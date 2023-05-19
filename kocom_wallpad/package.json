@@ -1,0 +1,21 @@
+{
+    "name": "npm_package",
+    "description": "NPM Package is a versatile Node.js library for various purposes.",
+    "version": "1.0.0",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "node.js",
+        "library",
+        "utility"
+    ],
+    "author": "harwin1",
+    "license": "ISC",
+    "dependencies": {
+        "serialport": "^10.5.0",
+        "mqtt": "^4.3.7",
+        "winston": "^3.8.2"
+    },
+    "homepage": ""
+}
