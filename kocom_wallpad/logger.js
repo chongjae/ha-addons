@@ -1,6 +1,6 @@
 const winston = require('winston');
 const { combine, timestamp, printf } = winston.format;
-const { to_file, level } = require('./config.json');
+const { to_file, level } = require('/data/options.json');
 
 // 로그 출력 포맷
 const format = winston.format.combine(
