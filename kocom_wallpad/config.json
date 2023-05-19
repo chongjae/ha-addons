@@ -27,14 +27,14 @@
       "stopbits": 1
     },
     "socket": {
-      "address": "116.32.120.46",
+      "address": "192.168.1.1",
       "port": 8899
     },
     "mqtt": {
-      "server": "116.32.120.46",
+      "server": "192.168.1.1",
       "port": 1883,
-      "username": "harwin",
-      "password": "mosquitto",
+      "username": "",
+      "password": "",
       "prefix": "kocom",
       "discovery": true
     },
