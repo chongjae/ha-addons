@@ -244,9 +244,9 @@ const DISCOVERY_PAYLOAD = {
         temp_step: 0.5,
     }],
     energy: [{
-        _intg: 'sensor'
-        name: '{0}_{1}_{2}',
-        stat_t: '{0}/energy/{1}/{2}/state',
+        _intg: 'sensor',
+        name: '{0}_{1}_consumption',
+        stat_t: '{0}/energy/{1}/consumption/state',
         unit_of_meas: '{3}'
     }],
     doorlock: [{
