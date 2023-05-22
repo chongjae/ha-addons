@@ -165,6 +165,72 @@ const MSG_INFO = [
 ];
 
 
+const DISCOVERY_DEVICE = {
+    'ids': ['kocom_wallpad'],
+    'name': 'kocom_wallpad',
+    'mf': "KOCOM",
+    'mdl': "Kocom Wallpad",
+    'sw': "harwin1/ha-addons/kocom_wallpad",
+};
+
+const DISCOVERY_PAYLOAD = {
+    light: [{
+        _intg: 'light',
+        name: '{0}_light_{1}_{2}',
+        cmd_t: '{0}/light/{1}/{2}/command',
+        stat_t: '{0}/light/{1}/{2}/state',
+        pl_on: "on",
+        pl_off: "off",
+    }],
+    outlet: [{
+        _intg: 'switch',
+        name: '{0}_outlet_{1}_{2}',
+        cmd_t: '{0}/outlet/{1}/{2}/command',
+        stat_t: '{0}/outlet/{1}/{2}/state',
+        pl_on: "on",
+        pl_off: "off",
+        icon: 'mdi:power-socket-eu'
+    }],
+    gas: [{
+        _intg: 'sensor',
+        name: '{0}_gas_valve',
+        stat_t: '{0}/gas/{1}/power/state',
+    },
+    {
+        _intg: 'switch',
+        name: '{0}_gas_cutoff',
+        cmd_t: '{0}/gas/{1}/cutoff/command',
+        stat_t: '{0}/gas/{1}/cutoff/state',
+        pl_on: "on",
+        pl_off: "off",
+        icon: 'mdi:gas-cylinder'
+    }],
+    fan: [{
+        _intg: 'fan',
+        name: '{0}_fan',
+        cmd_t: '{0}/fan/{1}/power/command',
+        stat_t: '{0}/fan/{1}/power/state',
+        pr_mode_cmd_t: '{0}/fan/{1}/preset/command',
+        pr_mode_stat_t: '{0}/fan/{1}/preset/state',
+        pr_modes: ["low", "medium", "high"],
+        pl_on: "on",
+        pl_off: "off",
+    }],
+    thermostat: [{
+        _intg: 'climate',
+        name: '{0}_thermostat_{1}',
+        mode_cmd_t: '{0}/thermostat/{1}/power/command',
+        mode_stat_t: '{0}/thermostat/{1}/power/state',
+        temp_cmd_t: '{0}/thermostat/{1}/target/command',
+        temp_stat_t: '{0}/thermostat/{1}/target/state',
+        curr_temp_t: '{0}/thermostat/{1}/current/state',
+        modes: ["off", "heat", "fan_only"],
+        min_temp: 5,
+        max_temp: 40,
+        temp_step: 1,
+    }]
+};
+
 class CustomParser extends Transform {
     constructor(options) {
         super(options);
