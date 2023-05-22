@@ -132,20 +132,21 @@ const MSG_INFO = [
         parseToProperty: (b) => {
             if (VENTTEMPI.hasOwnProperty(b[6])) var val = VENTTEMPI[b[6]];
             return [{ device: 'fan', room: '1', name: 'power', value: (b[5] ? 'on' : 'off') },
-            { device: 'fan', room: '1', name: 'preset', value: b[5] === 0x11 ? 'nature' : val },
-            { device: 'fan', room: '1', name: 'timer', value: b[7].toString(10) }];
+            { device: 'fan', room: b[5], name: 'preset', value: b[5] === 0x11 ? 'nature' : val },
+            { device: 'fan', room: b[5], name: 'timer', value: b[7].toString(10) }];
         }
     },
     {
         device: 'gas', header: 0x023180, length: 10, request: 'ack',
         parseToProperty: (b) => {
-            return [{ device: 'gas', room: '1', name: 'power', value: (b[5] ? 'on' : 'off') }];
+            return [{ device: 'gas', room: b[5], name: 'power', value: (b[5] ? 'on' : 'off') },
+                    { device: 'gas', room: b[5], name: 'cutoff', value: (b[5] ? '열림' : '닫힘') }];
         }
     },
     {
         device: 'doorlock', header: 0x024180, length: 10, request: 'ack',
         parseToProperty: (b) => {
-            return [{ device: 'doorlock', room: '1', name: 'power', value: (b[5] === 0x51 ? 'off' : 'on') }];
+            return [{ device: 'doorlock', room: b[5], name: 'power', value: (b[5] === 0x51 ? 'off' : 'on') }];
         }
     },
 
