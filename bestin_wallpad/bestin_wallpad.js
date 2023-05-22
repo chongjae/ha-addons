@@ -442,12 +442,11 @@ class rs485 {
             return;
         }
 
-        const cmdtopic = `${topics[0]}/${topics[1]}/${topics[2]}/${topics[3]}/command`;
         if (CONFIG.server_enable) {
             json = JSON.parse(fs.readFileSync('./session.json'));
         }
 
-        logger.info(`recv. message: ${cmdtopic} = ${value}`);
+        logger.info(`recv. message: ${topic} = ${value}`);
         if (topics[2] === 'livingroom') {
             const unitNum = topics[3].replace(/power/g, 'switch');
             this.serverLightCommand(unitNum, value, sert, json);
