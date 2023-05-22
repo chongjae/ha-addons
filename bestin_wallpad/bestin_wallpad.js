@@ -166,11 +166,11 @@ const MSG_INFO = [
 
 
 const DISCOVERY_DEVICE = {
-    'ids': ['kocom_wallpad'],
-    'name': 'kocom_wallpad',
-    'mf': "KOCOM",
-    'mdl': "Kocom Wallpad",
-    'sw': "harwin1/ha-addons/kocom_wallpad",
+    'ids': ['bestin_wallpad'],
+    'name': 'bestin_wallpad',
+    'mf': "HDC BESTIN",
+    'mdl': "Bestin Wallpad",
+    'sw': "harwin1/ha-addons/bestin_wallpad",
 };
 
 const DISCOVERY_PAYLOAD = {
@@ -181,6 +181,11 @@ const DISCOVERY_PAYLOAD = {
         stat_t: '{0}/light/{1}/{2}/state',
         pl_on: "on",
         pl_off: "off",
+    }, 
+    {
+        _intg: 'button',
+        name: '{0}_light_all',
+        cmt_t: '{0}/light/all/cutoff/command'
     }],
     outlet: [{
         _intg: 'switch',
@@ -215,6 +220,14 @@ const DISCOVERY_PAYLOAD = {
         pr_modes: ["low", "medium", "high"],
         pl_on: "on",
         pl_off: "off",
+    },
+    {
+        name: '{0}_fan_timer',
+        cmd_t: '{0}/fan/{1}/timer/command',
+        stat_t: '{0}/fan/{1}/timer/state',
+        min: 0,
+        max: 240,
+        unit_of_measurement: 'Minute',
     }],
     thermostat: [{
         _intg: 'climate',
@@ -224,10 +237,46 @@ const DISCOVERY_PAYLOAD = {
         temp_cmd_t: '{0}/thermostat/{1}/target/command',
         temp_stat_t: '{0}/thermostat/{1}/target/state',
         curr_temp_t: '{0}/thermostat/{1}/current/state',
-        modes: ["off", "heat", "fan_only"],
+        modes: ["off", "heat"],
         min_temp: 5,
         max_temp: 40,
-        temp_step: 1,
+        temp_step: 0.5,
+    }],
+    energy: [{
+        _intg: 'sensor'
+        name: '{0}_{1}_{2}',
+        stat_t: '{0}/energy/{1}/{2}/state',
+        unit_of_meas: '{3}'
+    }],
+    doorlock: [{
+        _intg: 'switch',
+        name: '{0}_doorlock',
+        cmd_t: '{0}/doorlock/{1}/power/command',
+        stat_t: '{0}/doorlock/{1}/power/state',
+        pl_on: "on",
+        pl_off: "off",
+        icon: 'mdi:lock'
+    }],
+    elevator: [{
+        _intg: 'switch',
+        name: '{0}_elevator',
+        cmd_t: '{0}/elevator/{1}/call/command',
+        stat_t: '{0}/elevator/{1}/call/state',
+        pl_on: "on",
+        pl_off: "off",
+        icon: 'mdi:elevator'
+    },
+    {
+        _intg: 'sensor',
+        name: '{0}_evdirection',
+        stat_t: '{0}/elevator/{1}/event/state',
+        icon: 'mdi:elevator'
+    },
+    {
+        _intg: 'sensor',
+        name: '{0}_evstate',
+        stat_t: '{0}/elevator/{1}/floor/state',
+        icon: 'mdi:elevator'
     }]
 };
 
@@ -424,179 +473,22 @@ class rs485 {
         }
         this._mqttClient.publish(topic, String(value), { retain: true });
     }
+       
+    mqttDiscovery(pref, dev, rm, nm) {
+        let payloads = DISCOVERY_PAYLOAD[dev];
 
-    mqttDiscovery(prefix, device, room, name) {
-        let topic;
-        let payload;
+        for (let i = 0; i < payloads.length; i++) {
+            let payload = JSON.parse(JSON.stringify(payloads[i]));
 
-        switch (device) {
-            case 'light':
-                topic = `homeassistant/light/bestin_wallpad/light_${room}_${name}/config`;
-                payload = {
-                    name: `bestin_light_${room}_${name}`,
-                    cmd_t: `${prefix}/light/${room}/${name}/command`,
-                    stat_t: `${prefix}/light/${room}/${name}/state`,
-                    uniq_id: `bestin_light_${room}_${name}`,
-                    pl_on: "on",
-                    pl_off: "off",
-                    device: {
-                        ids: "bestin_wallpad",
-                        name: "bestin_wallpad",
-                        mf: "HDC BESTIN",
-                        mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/ha-addons/bestin_wallpad",
-                    },
-                };
-                break;
-            case 'outlet':
-                let outletCmt = name.includes("usage") ? "sensor" : "switch";
-                topic = `homeassistant/${outletCmt}/bestin_wallpad/outlet_${room}_${name}/config`;
-                payload = {
-                    name: `bestin_outlet_${room}_${name}`,
-                    cmd_t: `${prefix}/outlet/${room}/${name}/command`,
-                    stat_t: `${prefix}/outlet/${room}/${name}/state`,
-                    uniq_id: `bestin_outlet_${room}_${name}`,
-                    pl_on: "on",
-                    pl_off: "off",
-                    ic: name.includes("usage") ? "mdi:lightning-bolt" : "mdi:power-socket-eu",
-                    unit_of_meas: name.includes("usage") ? "Wh" : "",
-                    device: {
-                        ids: "bestin_wallpad",
-                        name: "bestin_wallpad",
-                        mf: "HDC BESTIN",
-                        mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/ha-addons/bestin_wallpad",
-                    },
-                };
-                break;
-            case 'thermostat':
-                topic = `homeassistant/climate/bestin_wallpad/thermostat_${room}/config`;
-                payload = {
-                    name: `bestin_thermostat_${room}`,
-                    mode_cmd_t: `${prefix}/thermostat/${room}/power/command`,
-                    mode_stat_t: `${prefix}/thermostat/${room}/power/state`,
-                    temp_cmd_t: `${prefix}/thermostat/${room}/target/command`,
-                    temp_stat_t: `${prefix}/thermostat/${room}/target/state`,
-                    curr_temp_t: `${prefix}/thermostat/${room}/current/state`,
-                    uniq_id: `bestin_thermostat_${room}`,
-                    modes: ["off", "heat"],
-                    min_temp: 5,
-                    max_temp: 40,
-                    temp_step: 0.5,
-                    device: {
-                        ids: "bestin_wallpad",
-                        name: "bestin_wallpad",
-                        mf: "HDC BESTIN",
-                        mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/ha-addons/bestin_wallpad",
-                    },
-                };
-                break;
-            case 'fan':
-                let fanCmt, fanName = "";
-                if (name === "timer") fanCmt = "number", fanName = "timer"
-                else if (name === "power") fanCmt = "fan", fanName = "power"
+            this.format(payload, pref, rm, nm, rm === 'electric' ? 'kWh' : 'm³');
+            payload['name'] = payload['name'].replace('power', '');
 
-                topic = `homeassistant/${fanCmt}/bestin_wallpad/fan_${room}/config`;
-                payload = {
-                    name: `bestin_fan_${fanCmt === "number" ? "timer" : "1"}`,
-                    cmd_t: `${prefix}/fan/${room}/${fanName}/command`,
-                    stat_t: `${prefix}/fan/${room}/${fanName}/state`,
-                    pr_mode_cmd_t: `${prefix}/fan/${room}/preset/command`,
-                    pr_mode_stat_t: `${prefix}/fan/${room}/preset/state`,
-                    pr_modes: ["low", "medium", "high", "nature"],
-                    uniq_id: `bestin_fan_${fanCmt === "number" ? "timer" : "1"}`,
-                    min: 0,
-                    max: 240,
-                    unit_of_measurement: 'Minute',
-                    pl_on: "on",
-                    pl_off: "off",
-                    device: {
-                        ids: "bestin_wallpad",
-                        name: "bestin_wallpad",
-                        mf: "HDC BESTIN",
-                        mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/ha-addons/bestin_wallpad",
-                    },
-                };
-                break;
-            case 'gas':
-                topic = `homeassistant/switch/bestin_wallpad/gas_${room}/config`;
-                payload = {
-                    name: `bestin_gas_${room}`,
-                    cmd_t: `${prefix}/gas/${room}/power/command`,
-                    stat_t: `${prefix}/gas/${room}/power/state`,
-                    uniq_id: `bestin_gas_${room}`,
-                    pl_on: "on",
-                    pl_off: "off",
-                    ic: "mdi:gas-cylinder",
-                    device: {
-                        ids: "bestin_wallpad",
-                        name: "bestin_wallpad",
-                        mf: "HDC BESTIN",
-                        mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/ha-addons/bestin_wallpad",
-                    },
-                };
-                break;
-            case 'energy':
-                topic = `homeassistant/sensor/bestin_wallpad/${room}_${name}/config`;
-                payload = {
-                    name: `bestin_${room}_${name}`,
-                    stat_t: `${prefix}/energy/${room}/${name}/state`,
-                    unit_of_meas: room === "electric" ? "kWh" : "m³",
-                    uniq_id: `bestin_${room}_${name}`,
-                    device: {
-                        ids: "bestin_wallpad",
-                        name: "bestin_wallpad",
-                        mf: "HDC BESTIN",
-                        mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/ha-addons/bestin_wallpad",
-                    },
-                };
-                break;
-            case 'elevator':
-            case 'evstate':
-            case 'evdirection':
-                let evCmt = device === "elevator" ? "switch" : "sensor";
-                topic = `homeassistant/${evCmt}/bestin_wallpad/${device}_${room}/config`;
-                payload = {
-                    name: `bestin_${device}_${room}`,
-                    cmd_t: `${prefix}/${device}/${room}/${name}/command`,
-                    stat_t: `${prefix}/${device}/${room}/${name}/state`,
-                    uniq_id: `bestin_${device}_${room}`,
-                    ic: "mdi:elevator",
-                    device: {
-                        ids: "bestin_wallpad",
-                        name: "bestin_wallpad",
-                        mf: "HDC BESTIN",
-                        mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/ha-addons/bestin_wallpad",
-                    },
-                };
-                break;
-            case 'doorlock':
-                topic = `homeassistant/switch/bestin_wallpad/doorlock_${room}/config`;
-                payload = {
-                    name: `bestin_doorlock_${room}`,
-                    cmd_t: `${prefix}/doorlock/${room}/power/command`,
-                    stat_t: `${prefix}/doorlock/${room}/power/state`,
-                    uniq_id: `bestin_doorlock_${room}`,
-                    pl_on: "on",
-                    pl_off: "off",
-                    ic: 'mdi:lock',
-                    device: {
-                        ids: "bestin_wallpad",
-                        name: "bestin_wallpad",
-                        mf: "HDC BESTIN",
-                        mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/ha-addons/bestin_wallpad",
-                    },
-                };
-                break;
+            payload['uniq_id'] = payload['name'];
+            payload['device'] = DISCOVERY_DEVICE;
+
+            const topic = `homeassistant/${payload['_intg']}/bestin_wallpad/${payload['name']}/config`;
+            this._mqttClient.publish(topic, JSON.stringify(payload), { retain: true });
         }
-
-        this._mqttClient.publish(topic, JSON.stringify(payload), { retain: true });
     }
 
     // 패킷 체크섬 검증
@@ -834,7 +726,7 @@ class rs485 {
         const devices = {
             'gas': [0x02, 0x31, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3D],
             'doorlock': [0x02, 0x41, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x4E],
-            'lightbatch': [0x02, 0x31, 0x0B, 0x02, 0x31, 0x3f, 0x00, 0x00, 0x00, 0x00, 0x51],
+            'lightcutoff': [0x02, 0x31, 0x0B, 0x02, 0x31, 0x3f, 0x00, 0x00, 0x00, 0x00, 0x51],
         };
 
         const deviceData = devices[device];
