@@ -606,7 +606,7 @@ class rs485 {
         //console.log(packet.toString('hex'))
         this._lastReceive = new Date();
 
-        if (packet[0] === 0x02 && packet[1] !== 0x41) {
+        if (packet[0] === 0x02) {
             this._syncTime = this._lastReceive;
             this._timestamp = packet[4];
         }
@@ -624,6 +624,7 @@ class rs485 {
         }
 
         const foundIdx = this.findCommandIndex(packet, receivedMsg);
+        //console.log(foundIdx)
         if (foundIdx > -1) {
             logger.info(`success command: ${this._serialCmdQueue[foundIdx].device}, command idx: ${foundIdx}`);
             const { callback, device } = this._serialCmdQueue[foundIdx];
@@ -666,15 +667,10 @@ class rs485 {
     }
 
     findCommandIndex(packet, msg) {
-        const [byte1, byte2, byte3, byte4] = packet;
-        return this._serialCmdQueue.findIndex(({ cmdHex: [b1, b2], device }) => {
-            const b3 = msg.codeHex[2];
-            const b4 = msg.codeHex[3];
-
-            return (
-                b2 === byte2 &&
-                ((['gas', 'fan', 'doorlock'].includes(device) && byte3 === b3) || byte4 === b4)
-            );
+        return this._serialCmdQueue.findIndex(({ cmdHex }) => {
+            const i = cmdHex.length === 10 ? 2 : 3;
+            const ackHex = ((cmdHex[1] === 0x28 ? 0x9 : 0x8) << 4) | cmdHex[i] & 0x0f;
+            return (cmdHex[1] === packet[1] && "0x"+ackHex.toString(16) == packet[i]);
         });
     }
 
