@@ -95,8 +95,7 @@ const MSG_INFO = [
             for (let i = 0; i < ((b[5] & 0x0f) === 1 ? 4 : 2); i++) {
                 props.push({ device: 'light', room: b[5] & 0x0f, name: `power${i + 1}`, value: (b[6] & (1 << i)) ? 'on' : 'off' })
             }
-            props.push({ device: 'light', room: b[5] & 0x0f, name: 'batch', value: (b[6] & 0x0F) ? 'on' : 'off' },
-                { device: 'light', room: 'all', name: 'batch', value: (b[6] << 4 & 1) ? 'on' : 'off' });
+            props.push({ device: 'light', room: b[5] & 0x0f, name: 'batch', value: (b[6] & 0x0F) ? 'on' : 'off' });
 
             return props;
         }
