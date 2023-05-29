@@ -4,10 +4,10 @@
  */
 
 const logger = require('./logger.js');
-const SerialPort = require('serialport').SerialPort;
-const CONFIG = require('/data/options.json');
+const Options = require('/data/options.json');
 
-const Transform = require('stream').Transform;
+const { SerialPort } = require('serialport');
+const { Transform } = require('stream');
 
 const request = require('request');
 const xml2js = require('xml2js');
@@ -28,25 +28,31 @@ const {
     EVSTATE,
     VENTTEMP,
     VENTTEMPI,
-    OnOff
+    ONOFFDEV,
+    DISCOVERY_DEVICE,
+    DISCOVERY_PAYLOAD
 } = require('./const.js');
 
 const MSG_INFO = [
     ///////////////////////
-    //command <-> response
+    // 명령
+
+    // 조명
     {
         device: 'light', header: 0x02310D01, length: 13, request: 'set',
         setPropertyToMsg: (b, i, n, v) => {
             let id = n.slice(-1) - 1, pos = (v === 'on' ? 0x80 : 0x00), onff = (v === 'on' ? 0x04 : 0x00);
 
             b[5] = i & 0x0f;
-            if (n === 'batch') b[6] = (v === 'on' ? 0x8f : 0x0f);
+            if (n === 'all') b[6] = (v === 'on' ? 0x8f : 0x0f);
             else b[6] = (0x01 << id | pos);
             b[11] = onff;
 
             return b;
         }
     },
+
+    // 콘센트
     {
         device: 'outlet', header: 0x02310D01, length: 13, request: 'set',
         setPropertyToMsg: (b, i, n, v) => {
@@ -54,14 +60,14 @@ const MSG_INFO = [
 
             b[5] = i & 0x0F;
             if (n === 'standby') b[8] = (v === 'on' ? 0x83 : 0x03);
-            else if (n === 'batch') b[7] = (v === 'on' ? 0x8f : 0x0f), b[11] = onff;
+            else if (n === 'all') b[7] = (v === 'on' ? 0x8f : 0x0f), b[11] = onff;
             else b[7] = (0x01 << id | pos), b[11] = onff;
 
             return b;
         }
     },
 
-
+    // 난방
     {
         device: 'thermostat', header: 0x02280E12, length: 14, request: 'set',
         setPropertyToMsg: (b, i, n, v) => {
@@ -74,11 +80,12 @@ const MSG_INFO = [
             return b;
         }
     },
+
+    // 환기
     {
         device: 'fan', header: 0x026100, length: 10, request: 'set',
         setPropertyToMsg: (b, i, n, v) => {
             if (n === 'power') b[2] = 0x01, b[5] = (v === 'on' ? 0x01 : 0x00), b[6] = 0x01;
-            else if (n === 'timer') b[2] = 0x04, b[7] = v.toString(16);
             else b[2] = (v === 'nature' ? 0x07 : 0x03), b[6] = VENTTEMP[v];
 
             return b;
@@ -86,7 +93,9 @@ const MSG_INFO = [
     },
 
     /////////////////////
-    //query <-> response
+    // 상태
+
+    // 조명
     {
         device: 'light', header: 0x02311E91, length: 30, request: 'ack',
         parseToProperty: (b) => {
@@ -95,10 +104,13 @@ const MSG_INFO = [
             for (let i = 0; i < ((b[5] & 0x0f) === 1 ? 4 : 2); i++) {
                 props.push({ device: 'light', room: b[5] & 0x0f, name: `power${i + 1}`, value: (b[6] & (1 << i)) ? 'on' : 'off' })
             }
-            props.push({ device: 'light', room: b[5] & 0x0f, name: 'batch', value: (b[6] & 0x0F) ? 'on' : 'off' });
+            props.push({ device: 'light', room: b[5] & 0x0f, name: 'all', value: (b[6] & 0x0F) ? 'on' : 'off' });
+
             return props;
         }
     },
+
+    // 콘센트
     {
         device: 'outlet', header: 0x02311E91, length: 30, request: 'ack',
         parseToProperty: (b) => {
@@ -110,59 +122,80 @@ const MSG_INFO = [
                 props.push({ device: 'outlet', room: b[5] & 0x0f, name: `power${i + 1}`, value: (b[7] & (1 << i)) ? 'on' : 'off' },
                     { device: 'outlet', room: b[5] & 0x0f, name: `usage${i + 1}`, value: cons })
             }
-            props.push({ device: 'outlet', room: b[5] & 0x0f, name: 'batch', value: (b[7] & 0x0F) ? 'on' : 'off' },
+            props.push({ device: 'outlet', room: b[5] & 0x0f, name: 'all', value: (b[7] & 0x0F) ? 'on' : 'off' },
                 { device: 'outlet', room: b[5] & 0x0f, name: 'standby', value: (b[7] >> 4 & 1) ? 'on' : 'off' });
 
             return props;
         }
     },
 
+    // 난방
     {
         device: 'thermostat', header: 0x02281091, length: 16, request: 'ack',
         parseToProperty: (b) => {
-
-            return [{ device: 'thermostat', room: b[5] & 0x0f, name: 'power', value: (b[6] & 0x01) ? 'heat' : 'off' },
-            { device: 'thermostat', room: b[5] & 0x0f, name: 'target', value: (b[7] & 0x3f) + ((b[7] & 0x40) && 0.5) },
-            { device: 'thermostat', room: b[5] & 0x0f, name: 'current', value: ((b[8] << 8) + b[9]) / 10.0 }];
+            let props = [];
+            props.push({ device: 'thermostat', room: b[5] & 0x0f, name: 'power', value: (b[6] & 0x01) ? 'heat' : 'off' },
+                { device: 'thermostat', room: b[5] & 0x0f, name: 'target', value: (b[7] & 0x3f) + ((b[7] & 0x40) && 0.5) },
+                { device: 'thermostat', room: b[5] & 0x0f, name: 'current', value: ((b[8] << 8) + b[9]) / 10.0 });
+            return props;
         }
     },
+
+    // 환기
     {
         device: 'fan', header: 0x026180, length: 10, request: 'ack',
         parseToProperty: (b) => {
-            if (VENTTEMPI.hasOwnProperty(b[6])) var val = VENTTEMPI[b[6]];
-            return [{ device: 'fan', room: '1', name: 'power', value: (b[5] ? 'on' : 'off') },
-            { device: 'fan', room: '1', name: 'preset', value: b[5] === 0x11 ? 'nature' : val },
-            { device: 'fan', room: '1', name: 'timer', value: b[7].toString(10) }];
+            let props = [], val;
+            if (VENTTEMPI.hasOwnProperty(b[6])) val = VENTTEMPI[b[6]];
+            props.push({ device: 'fan', room: '1', name: 'power', value: (b[5] ? 'on' : 'off') },
+                { device: 'fan', room: '1', name: 'preset', value: b[5] === 0x11 ? 'nature' : val });
+            return props;
         }
     },
+
+    // 가스
     {
         device: 'gas', header: 0x023180, length: 10, request: 'ack',
         parseToProperty: (b) => {
-            return [{ device: 'gas', room: '1', name: 'power', value: (b[5] ? 'on' : 'off') }];
+            let props = [];
+            props.push({ device: 'gas', room: '1', name: 'cutoff', value: (b[5] ? 'on' : 'off') },
+                { device: 'gas', room: '1', name: 'power', value: (b[5] ? '열림' : '닫힘') });
+            return props;
         }
     },
+
+    // 도어락
     {
         device: 'doorlock', header: 0x024180, length: 10, request: 'ack',
         parseToProperty: (b) => {
-            return [{ device: 'doorlock', room: '1', name: 'power', value: (b[5] === 0x51 ? 'off' : 'on') }];
+            let props = [];
+            props.push({ device: 'doorlock', room: '1', name: 'power', value: (b[5] === 0x51 ? 'off' : 'on') });
+            return props;
         }
     },
 
+    // 에너지
     {
         device: 'energy', header: 0x02D13082, length: 48, request: 'ack',
         parseToProperty: (b) => {
-            let props = [], idx = 13;
+            let props = [], index = 13;
+            const index_t = { 'elec': [8, 12], 'water': [17, 19], 'gas': [32, 35] },
+                elements = ['elec', 'heat', 'hwater', 'gas', 'water'];
 
-            for (const elem of ['electric', 'heat', 'hotwater', 'gas', 'water']) {
-                cons = Number(b.slice(idx, idx + 2).toString('hex'));
-                props.push({ device: 'energy', room: elem, name: 'consumption', value: cons });
-                idx += 8;
+            for (const element of elements) {
+                let total_u = b.slice(index_t[element]?.[0], index_t[element]?.[1]).toString('hex');
+                let realt_u = b.slice(index, index + 2).toString('hex');
+                index += 8;
+
+                total_u = { 'elec': (total_u / 100).toFixed(1), 'water': total_u / 10, 'gas': total_u / 10 }[element];
+
+                if (total_u !== undefined) props.push({ device: 'energy', room: element, name: 'total', value: Number(total_u) });
+                props.push({ device: 'energy', room: element, name: 'realt', value: Number(realt_u) });
             }
             return props;
         }
     },
 ];
-
 
 class CustomParser extends Transform {
     constructor(options) {
@@ -246,8 +279,10 @@ class CustomParser extends Transform {
     getExpectedLength(chunk, i) {
         let expectedLength = 0;
         if ([0x31, 0x41].includes(chunk[i + 1]) && [0x00, 0x02, 0x80, 0x82].includes(chunk[i + 2])) {
+            // 가스, 환기, 도어락 패킷 길이 10고정
             expectedLength = 10;
         } else if (chunk[i + 1] === 0x61) {
+            // 나머지 3바이트의 10 진수 길이를 따라감
             expectedLength = 10;
         }
 
@@ -269,20 +304,20 @@ class rs485 {
         this._connection = null;
 
         this._mqttClient = this.mqttClient();
-        this._connEnergy = this.createConnection(CONFIG.energy, 'energy');
-        this._connControl = this.createConnection(CONFIG.control, 'control');
-        this.serverCreate(CONFIG.server_enable, CONFIG.server_type);
+        this._connEnergy = this.createConnection(Options.energy, 'energy');
+        this._connControl = this.createConnection(Options.control, 'control');
+        this.serverCreate(Options.server_enable, Options.server_type);
     }
 
     mqttClient() {
         const client = mqtt.connect({
-            host: CONFIG.mqtt.broker,
-            port: CONFIG.mqtt.port,
-            username: CONFIG.mqtt.username,
-            password: CONFIG.mqtt.password,
-            keepalive: 60, 
-            reconnect: true, 
-            reconnectInterval: 1000 
+            host: Options.mqtt.broker,
+            port: Options.mqtt.port,
+            username: Options.mqtt.username,
+            password: Options.mqtt.password,
+            keepalive: 60,  // 세션 유지
+            reconnect: true,  // 재접속 허용
+            reconnectInterval: 1000  // 재접속 간격
         });
 
         client.on('connect', () => {
@@ -291,6 +326,7 @@ class rs485 {
             const topics = ['bestin/+/+/+/command', 'homeassistant/status'];
             topics.forEach(topic => {
                 client.subscribe(topic, (err) => {
+                    logger.info(`subscribe  ${topic}`)
                     if (err) {
                         logger.error(`failed to subscribe to ${topic}`);
                     }
@@ -319,27 +355,21 @@ class rs485 {
         }
         let topics = topic.split("/");
         let value = message.toString();
-        let sert = CONFIG.server_type;
         let json;
-        if (topics[0] !== CONFIG.mqtt.prefix) {
+        if (topics[0] !== Options.mqtt.prefix) {
             return;
         }
 
-        if (CONFIG.server_enable) {
+        if (Options.server_enable) {
             json = JSON.parse(fs.readFileSync('./session.json'));
         }
 
         logger.info(`recv. message: ${topic} = ${value}`);
-        if (topics[2] === 'livingroom') {
-            const unitNum = topics[3].replace(/power/g, 'switch');
-            this.serverLightCommand(unitNum, value, sert, json);
-        } else if (topics[1] === 'elevator' && sert === 'v2') {
-            this.serverEvCommand(value, json);
+
+        if (topics[2] === '0' || topics[1] === 'elevator') {
+            this.serverCommand(topics, value, json);
         } else {
             const [device, room, name] = topics.slice(1, 4);
-            if (device === 'light' && room === 'all' && sert === 'v2') {
-                this.serverLightCommand('all', 'off', 'v2', json);
-            }
             this.setCommandProperty(device, room, name, value);
         }
     }
@@ -348,186 +378,49 @@ class rs485 {
         if (!this._mqttConnected) {
             return;
         }
-        const prefix = CONFIG.mqtt.prefix;
+        const prefix = Options.mqtt.prefix;
         const topic = `${prefix}/${device}/${room}/${name}/state`;
 
         if (typeof value !== 'number') {
+            // 사용량이 계속 바뀌는 경우 로깅 제외(에너지, 난방 현재온도, 콘센트 사용량 등)
             logger.info(`publish to mqtt: ${topic} = ${value}`);
         }
         this._mqttClient.publish(topic, String(value), { retain: true });
     }
 
-    mqttDiscovery(prefix, device, room, name) {
-        let topic;
-        let payload;
+    formatDiscovery(prefix, device, room, name) {
+        let payloads = this.JSON(DISCOVERY_PAYLOAD[device]);
 
-        switch (device) {
-            case 'light':
-                topic = `homeassistant/light/bestin_wallpad/light_${room}_${name}/config`;
-                payload = {
-                    name: `bestin_light_${room}_${name}`,
-                    cmd_t: `${prefix}/light/${room}/${name}/command`,
-                    stat_t: `${prefix}/light/${room}/${name}/state`,
-                    uniq_id: `bestin_light_${room}_${name}`,
-                    pl_on: "on",
-                    pl_off: "off",
-                    device: {
-                        ids: "bestin_wallpad",
-                        name: "bestin_wallpad",
-                        mf: "HDC BESTIN",
-                        mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/ha-addons/bestin_wallpad",
-                    },
-                };
-                break;
-            case 'outlet':
-                let outletCmt = name.includes("usage") ? "sensor" : "switch";
-                topic = `homeassistant/${outletCmt}/bestin_wallpad/outlet_${room}_${name}/config`;
-                payload = {
-                    name: `bestin_outlet_${room}_${name}`,
-                    cmd_t: `${prefix}/outlet/${room}/${name}/command`,
-                    stat_t: `${prefix}/outlet/${room}/${name}/state`,
-                    uniq_id: `bestin_outlet_${room}_${name}`,
-                    pl_on: "on",
-                    pl_off: "off",
-                    ic: name.includes("usage") ? "mdi:lightning-bolt" : "mdi:power-socket-eu",
-                    unit_of_meas: name.includes("usage") ? "Wh" : "",
-                    device: {
-                        ids: "bestin_wallpad",
-                        name: "bestin_wallpad",
-                        mf: "HDC BESTIN",
-                        mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/ha-addons/bestin_wallpad",
-                    },
-                };
-                break;
-            case 'thermostat':
-                topic = `homeassistant/climate/bestin_wallpad/thermostat_${room}/config`;
-                payload = {
-                    name: `bestin_thermostat_${room}`,
-                    mode_cmd_t: `${prefix}/thermostat/${room}/power/command`,
-                    mode_stat_t: `${prefix}/thermostat/${room}/power/state`,
-                    temp_cmd_t: `${prefix}/thermostat/${room}/target/command`,
-                    temp_stat_t: `${prefix}/thermostat/${room}/target/state`,
-                    curr_temp_t: `${prefix}/thermostat/${room}/current/state`,
-                    uniq_id: `bestin_thermostat_${room}`,
-                    modes: ["off", "heat"],
-                    min_temp: 5,
-                    max_temp: 40,
-                    temp_step: 0.5,
-                    device: {
-                        ids: "bestin_wallpad",
-                        name: "bestin_wallpad",
-                        mf: "HDC BESTIN",
-                        mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/ha-addons/bestin_wallpad",
-                    },
-                };
-                break;
-            case 'fan':
-                let fanCmt, fanName = "";
-                if (name === "timer") fanCmt = "number", fanName = "timer"
-                else if (name === "power") fanCmt = "fan", fanName = "power"
-
-                topic = `homeassistant/${fanCmt}/bestin_wallpad/fan_${room}/config`;
-                payload = {
-                    name: `bestin_fan_${fanCmt === "number" ? "timer" : "1"}`,
-                    cmd_t: `${prefix}/fan/${room}/${fanName}/command`,
-                    stat_t: `${prefix}/fan/${room}/${fanName}/state`,
-                    pr_mode_cmd_t: `${prefix}/fan/${room}/preset/command`,
-                    pr_mode_stat_t: `${prefix}/fan/${room}/preset/state`,
-                    pr_modes: ["low", "medium", "high", "nature"],
-                    uniq_id: `bestin_fan_${fanCmt === "number" ? "timer" : "1"}`,
-                    min: 0,
-                    max: 240,
-                    unit_of_measurement: 'Minute',
-                    pl_on: "on",
-                    pl_off: "off",
-                    device: {
-                        ids: "bestin_wallpad",
-                        name: "bestin_wallpad",
-                        mf: "HDC BESTIN",
-                        mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/ha-addons/bestin_wallpad",
-                    },
-                };
-                break;
-            case 'gas':
-                topic = `homeassistant/switch/bestin_wallpad/gas_${room}/config`;
-                payload = {
-                    name: `bestin_gas_${room}`,
-                    cmd_t: `${prefix}/gas/${room}/power/command`,
-                    stat_t: `${prefix}/gas/${room}/power/state`,
-                    uniq_id: `bestin_gas_${room}`,
-                    pl_on: "on",
-                    pl_off: "off",
-                    ic: "mdi:gas-cylinder",
-                    device: {
-                        ids: "bestin_wallpad",
-                        name: "bestin_wallpad",
-                        mf: "HDC BESTIN",
-                        mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/ha-addons/bestin_wallpad",
-                    },
-                };
-                break;
-            case 'energy':
-                topic = `homeassistant/sensor/bestin_wallpad/${room}_${name}/config`;
-                payload = {
-                    name: `bestin_${room}_${name}`,
-                    stat_t: `${prefix}/energy/${room}/${name}/state`,
-                    unit_of_meas: room === "electric" ? "kWh" : "m³",
-                    uniq_id: `bestin_${room}_${name}`,
-                    device: {
-                        ids: "bestin_wallpad",
-                        name: "bestin_wallpad",
-                        mf: "HDC BESTIN",
-                        mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/ha-addons/bestin_wallpad",
-                    },
-                };
-                break;
-            case 'elevator':
-            case 'evstate':
-            case 'evdirection':
-                let evCmt = device === "elevator" ? "switch" : "sensor";
-                topic = `homeassistant/${evCmt}/bestin_wallpad/${device}_${room}/config`;
-                payload = {
-                    name: `bestin_${device}_${room}`,
-                    cmd_t: `${prefix}/${device}/${room}/${name}/command`,
-                    stat_t: `${prefix}/${device}/${room}/${name}/state`,
-                    uniq_id: `bestin_${device}_${room}`,
-                    ic: "mdi:elevator",
-                    device: {
-                        ids: "bestin_wallpad",
-                        name: "bestin_wallpad",
-                        mf: "HDC BESTIN",
-                        mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/ha-addons/bestin_wallpad",
-                    },
-                };
-                break;
-            case 'doorlock':
-                topic = `homeassistant/switch/bestin_wallpad/doorlock_${room}/config`;
-                payload = {
-                    name: `bestin_doorlock_${room}`,
-                    cmd_t: `${prefix}/doorlock/${room}/power/command`,
-                    stat_t: `${prefix}/doorlock/${room}/power/state`,
-                    uniq_id: `bestin_doorlock_${room}`,
-                    pl_on: "on",
-                    pl_off: "off",
-                    ic: 'mdi:lock',
-                    device: {
-                        ids: "bestin_wallpad",
-                        name: "bestin_wallpad",
-                        mf: "HDC BESTIN",
-                        mdl: "HDC BESTIN Wallpad",
-                        sw: "harwin1/ha-addons/bestin_wallpad",
-                    },
-                };
-                break;
+        for (let i = 0; i < payloads.length; i++) {
+            if (/\d+$/.test(name)) {
+                // name 변수의 숫자(index)가 포함된 경우
+                if (device === 'light') {
+                    this.format(payloads[i], prefix, room, name);
+                    payloads[i]['name'] = payloads[i]['name'].replace(/power|switch/g, "");
+                } else {
+                    this.format(payloads[i], prefix, room, name.slice(-1));
+                }
+            } else {
+                if (payloads[i]['_intg'] !== 'sensor' || ['energy', 'gas', 'elevator'].includes(device)) {
+                    this.format(payloads[i], prefix, room, name);
+                    if (device === 'energy') {
+                        payloads[i]['unit_of_meas'] = { 'elec': 'kWh', 'heat': 'MWh' }[room] ?? 'm³';
+                    }
+                }
+            }
+            this.mqttDiscovery(payloads[i]);
         }
+    }
 
+    mqttDiscovery(payload) {
+        let integration = payload['_intg'];
+        let payloadName = payload['name'];
+
+        payload['uniq_id'] = payloadName;
+        payload['device'] = DISCOVERY_DEVICE;
+
+        //console.log(payload);
+        const topic = `homeassistant/${integration}/bestin_wallpad/${payloadName}/config`;
         this._mqttClient.publish(topic, JSON.stringify(payload), { retain: true });
     }
 
@@ -536,9 +429,10 @@ class rs485 {
         let sum = 3;
         for (let i = 0; i < packet.length - 1; i++) {
             sum ^= packet[i];
-            sum = (sum + 1) & 0xFF;
+            sum = (sum + 1) & 0xff;
         }
         return sum === packet[packet.length - 1];
+        // 패킷 체크섬 인덱스랑 생성된 체크섬 검증
     }
 
     // 명령 패킷 마지막 바이트(crc) 생성
@@ -546,13 +440,14 @@ class rs485 {
         let sum = 3;
         for (let i = 0; i < packet.length - 1; i++) {
             sum ^= packet[i];
-            sum = (sum + 1) & 0xFF;
+            sum = (sum + 1) & 0xff;
         }
         return sum;
     }
 
     createConnection(options, name) {
         if (options.path === "" && options.address === "") {
+            // serial 또는 socket의 path나 address 값이 없다면 해당 포트는 사용하지 않는걸로 간주 비활성화
             logger.warn(`${name} connection disabled!`);
             return;
         }
@@ -600,7 +495,9 @@ class rs485 {
     }
 
     handlePacket(packet) {
-        //console.log(packet.toString('hex'))
+        if (packet[1] === 0xd1 && packet[3] === 0x82) {
+            //console.log(packet);
+        }
         this._lastReceive = new Date();
 
         if (packet[0] === 0x02) {
@@ -659,6 +556,7 @@ class rs485 {
             //isValid,
         };
         receivedMsg.isValid = receivedMsg.validMsgInfos[0] ? isValid : true;
+        // receivedMsg.validMsgInfos[0] 값이 있는 경우 isValid 변환 아닌경우 항상 true 변환(해당 property 없음)
         _receivedMsgs.push(receivedMsg);
         return receivedMsg;
     }
@@ -667,7 +565,7 @@ class rs485 {
         return this._serialCmdQueue.findIndex(({ cmdHex }) => {
             const i = cmdHex.length === 10 ? 2 : 3;
             const ackHex = ((cmdHex[1] === 0x28 ? 0x9 : 0x8) << 4) | cmdHex[i] & 0x0f;
-            return (cmdHex[1] === packet[1] && "0x"+ackHex.toString(16) == packet[i]);
+            return (cmdHex[1] === packet[1] && Number("0x" + ackHex.toString(16)) === packet[i]);
         });
     }
 
@@ -680,19 +578,6 @@ class rs485 {
         }
     }
 
-    //if (CONFIG.rs485.dump_time > 0) {
-    //    let count = 0;
-    //    logger.info(`packet dump set dump time: ${CONFIG.rs485.dump_time}s`)
-    //    const intervalId = setInterval(() => {
-    //        fs.writeFileSync('logs/packet_dump.txt', packet.toString('hex') + '\n', { flag: 'a' });
-    //        count = count + 1;
-    //        if (count === CONFIG.rs485.dump_time) {
-    //            logger.info('packet dump finish. to file packet_dump.txt')
-    //            clearInterval(intervalId);
-    //        }
-    //    }, 1000);
-    //}
-
     addCommandToQueue(cmdHex, device, room, name, value, callback) {
         const serialCmd = {
             cmdHex,
@@ -702,7 +587,7 @@ class rs485 {
             value: value,
             callback,
             sentTime: new Date(),
-            retryCount: CONFIG.rs485.max_retry
+            retryCount: Options.rs485.max_retry
         };
 
         this._serialCmdQueue.push(serialCmd);
@@ -710,6 +595,7 @@ class rs485 {
 
         const elapsed = serialCmd.sentTime - this._syncTime;
         const delay = (elapsed < 100) ? 100 - elapsed : 0;
+        // 100ms 이후 실행 하도록 함
 
         setTimeout(() => this.processCommand(serialCmd), delay);
     }
@@ -728,6 +614,7 @@ class rs485 {
             'thermostat': this._connControl,
             'doorlock': this._connControl,
         }[serialCmd.device];
+        // 디바이스별 포트 설정
 
         if (!writeHandle) {
             logger.error(`invalid device: ${serialCmd.device}`);
@@ -736,7 +623,7 @@ class rs485 {
 
         writeHandle.write(serialCmd.cmdHex, (err) => {
             if (err) {
-                logger.error('send Error:', err.message);
+                logger.error('send error:', err.message);
             }
         });
 
@@ -745,7 +632,7 @@ class rs485 {
             this._serialCmdQueue.push(serialCmd);
             setTimeout(() => this.processCommand(serialCmd), 100);
         } else {
-            logger.warn(`command(${serialCmd.device}) has exceeded the maximum retry limit of ${CONFIG.rs485.max_retry} times`);
+            logger.warn(`command(${serialCmd.device}) has exceeded the maximum retry limit of ${Options.rs485.max_retry} times`);
             if (serialCmd.callback) {
                 serialCmd.callback.call(this);
             }
@@ -766,7 +653,7 @@ class rs485 {
         const devices = {
             'gas': [0x02, 0x31, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3D],
             'doorlock': [0x02, 0x41, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x4E],
-            'lightbatch': [0x02, 0x31, 0x0B, 0x02, 0x31, 0x3f, 0x00, 0x00, 0x00, 0x00, 0x51],
+            'lightcutoff': [0x02, 0x31, 0x0B, 0x02, 0x31, 0x3f, 0x00, 0x00, 0x00, 0x00, 0x51],
         };
 
         const deviceData = devices[device];
@@ -782,13 +669,13 @@ class rs485 {
 
     setCommandProperty(device, room, name, value, callback) {
         const ownProp = room === 'all' ? device + name : device;
-        const msgInfo = MSG_INFO.find(e => e.setPropertyToMsg && (ownProp === e.device || OnOff.hasOwnProperty(ownProp)));
+        const msgInfo = MSG_INFO.find(e => e.setPropertyToMsg && (ownProp === e.device || ONOFFDEV.hasOwnProperty(ownProp)));
 
         if (!msgInfo) {
             logger.warn(`   unknown device: ${device}`);
             return;
         }
-        if (OnOff.hasOwnProperty(ownProp) && value !== OnOff[ownProp]) {
+        if (ONOFFDEV.hasOwnProperty(ownProp) && value !== ONOFFDEV[ownProp]) {
             logger.warn(`   unknown command: ${device}, ${value}`)
             return;
         }
@@ -803,7 +690,7 @@ class rs485 {
         msgInfo.setPropertyToMsg(cmdHex, room, name, value);
         cmdHex[msgInfo.length - 1] = this.generateCheckSum(cmdHex);
 
-        const buffer = OnOff.hasOwnProperty(ownProp) ? this.OnOffDevice(ownProp, value) : cmdHex;
+        const buffer = ONOFFDEV.hasOwnProperty(ownProp) ? this.OnOffDevice(ownProp, value) : cmdHex;
         this.addCommandToQueue(buffer, device, room, name, value, callback);
     }
 
@@ -823,8 +710,8 @@ class rs485 {
         this.mqttClientUpdate(device, room, name, value);
 
         const discoveryOn = setImmediate(() => {
-            if (!this._discovery && CONFIG.mqtt.discovery) {
-                this.mqttDiscovery(CONFIG.mqtt.prefix, device, room, name);
+            if (!this._discovery && Options.mqtt.discovery) {
+                this.formatDiscovery(Options.mqtt.prefix, device, room, name);
             } else {
                 return true;
             }
@@ -842,40 +729,58 @@ class rs485 {
         }
 
         const loginFunc = type === 'v1' ? this.serverLogin.bind(this) : this.serverLogin2.bind(this);
-        loginFunc();
-        setInterval(loginFunc, type === 'v1' ? 1200000 : 3600000);
+        loginFunc('fresh');
+        setInterval(loginFunc, type === 'v1' ? 1200000 : 3600000, 'refresh');
     }
 
-    serverLogin() {
+    serverLogin(time) {
         request.get(V1LOGIN, (error, response, body) => {
             if (error) {
-                logger.error(`i-park v1 server login failed with error code: ${error}`);
+                logger.error(`IPARK v1 server ${time === 'fresh' ? 'login' : 'session refresh'} failed with error code: ${error}`);
                 return;
+            }
+
+            if (time === 'refresh') {
+                logger.info('IPARK v1 server session refreshing...');
             }
 
             const parse = JSON.parse(body);
             if (response.statusCode === 200 && parse.ret === 'success') {
-                logger.info('i-park v1 server login successful');
-                this.loginManagement(response, 'v1');
+                if (time === 'fresh') {
+                    logger.info(`IPARK v1 server login successful! \n=== ${parse}`);
+                    this.loginManagement(response, 'v1', 'fresh');
+                } else {
+                    logger.info('IPARK v1 server session refresh successful!');
+                    this.loginManagement(response, 'v1', 'refresh');
+                }
             } else {
-                logger.warn(`i-park v1 server login failed: ${parse.ret}`);
+                logger.warn(`IPARK v1 server login failed: ${parse.ret}`);
             }
         });
     }
 
-    serverLogin2() {
+    serverLogin2(time) {
         request.post(V2LOGIN, (error, response, body) => {
             if (error) {
-                logger.error(`i-park v2 server login failed with error code: ${error}`);
+                logger.error(`IPARK v2 server ${time === 'fresh' ? 'login' : 'session refresh'} failed with error code: ${error}`);
                 return;
+            }
+
+            if (time === 'refresh') {
+                logger.info('IPARK v2 server session refreshing...');
             }
 
             const parse = JSON.parse(body);
             if (response.statusCode === 200) {
-                logger.info('i-park v2 server login successful');
-                this.loginManagement(parse, 'v2');
+                if (time === 'fresh') {
+                    logger.info(`IPARK v2 server login successful! \n=== ${JSON.stringify({ ...parse, 'access-token': "*".repeat(parse['access-token'].length) })}`);
+                    this.loginManagement(parse, 'v2', 'fresh');
+                } else {
+                    logger.info('IPARK v2 server session refresh successful!');
+                    this.loginManagement(parse, 'v2', 'refresh');
+                }
             } else {
-                logger.error(`i-park v2 server error statusCode: ${response.statusCode}`);
+                logger.error(`IPARK v2 server error statusCode: ${response.statusCode}`);
             }
         });
     }
@@ -892,12 +797,12 @@ class rs485 {
         return obj;
     }
 
-    reJson(obj) {
+    JSON(obj) {
         return JSON.parse(JSON.stringify(obj));
     }
 
-    loginManagement(res, type) {
-        const format = this.format.bind(this);
+
+    loginManagement(res, type, time) {
 
         const isV1 = type === 'v1';
         const cookie = () => {
@@ -926,26 +831,26 @@ class rs485 {
 
         try {
             fs.writeFileSync('./session.json', JSON.stringify(data));
-            logger.info(`session.json file write successful!`);
+            if (time === 'fresh') logger.info(`session.json file write successful!`);
         } catch (err) {
             logger.error(`session.json file write fail. [${err}]`);
             return;
         }
 
         const json = JSON.parse(fs.readFileSync('./session.json'));
-        
-        const statusUrl = isV1 ? format(this.reJson(V1LIGHTSTATUS), json.phpsessid, json.userid, json.username) : format(this.reJson(V2LIGHTSTATUS), json.url, json['access-token']);
+
+        const statusUrl = isV1 ? this.format(V1LIGHTSTATUS, json.phpsessid, json.userid, json.username) : this.format(V2LIGHTSTATUS, json.url, json['access-token']);
         const lightStatFunc = this.getServerLightStatus.bind(this);
-        lightStatFunc(statusUrl, type);
-        setInterval(lightStatFunc, CONFIG.server.scan_interval * 1000, statusUrl, type);
+        lightStatFunc(statusUrl, type, 'fresh');
+        setInterval(lightStatFunc, Options.server.scan_interval * 1000, this.JSON(statusUrl), type, 'refresh');
 
         if (!isV1) {
-            format(V2EVSTATUS, json.url.split('://')[1]);
+            this.format(V2EVSTATUS, json.url.split('://')[1]);
             this.getServerEVStatus(V2EVSTATUS);
         }
     }
 
-    getServerLightStatus(url, type) {
+    getServerLightStatus(url, type, time) {
         request.get(url, (error, response, body) => {
             if (error) {
                 logger.error(`failed to retrieve server light status: ${error}`);
@@ -957,7 +862,12 @@ class rs485 {
                 return;
             }
 
-            logger.info('server light status request successful!');
+            try {
+                if (body) logger.info(`server light status ${time === 'fresh' ? 'request' : 'update'} successful!`);
+            } catch (error) {
+                logger.error(`server light status ${time === 'fresh' ? 'request' : 'update'} fail! [${error}]`);
+                return;
+            }
 
             if (type === 'v1') {
                 this.parseXmlLightStatus(body);
@@ -977,44 +887,53 @@ class rs485 {
             const statusInfo = result?.imap?.service?.[0]?.status_info;
 
             if (!statusInfo) {
-                logger.warn('Failed to parse XML light status: status_info property not found');
+                logger.warn('failed to parse XML light status: status_info property not found');
                 return;
             }
 
             statusInfo.forEach(status => {
                 const device = 'light';
-                const room = 'livingroom';
-                const unitNum = status.$.unit_num.replace(/switch/g, 'power');
-                const unitStatus = status.$.unit_status;
+                const room = '0';
 
-                this.updateProperty(device, room, unitNum, unitStatus);
+                this.updateProperty(device, room, status.$.unit_num, status.$.unit_status);
             });
         });
     }
 
     parseJsonLightStatus(json) {
-        let data;
+        let jsonData;
 
         try {
-            data = JSON.parse(json);
+            jsonData = JSON.parse(json);
         } catch (err) {
-            logger.error(`failed to parse JSON light status: ${err}`);
+            logger.error(`Failed to parse JSON light status: ${err}`);
             return;
         }
 
-        const units = data?.units;
+        const units = jsonData?.units;
 
         if (!units) {
-            logger.warn('failed to parse JSON light status: units property not found');
+            logger.warn('Failed to parse JSON light status: "units" property not found');
             return;
         }
+
+        let allOff = true;
 
         units.forEach((unit) => {
             const device = 'light';
-            const room = 'livingroom';
-            const unitNum = unit.unit.replace(/switch/g, 'power');
+            const room = '0';
 
-            this.updateProperty(device, room, unitNum, unit.state);
+            if (unit.state === 'on') {
+                allOff = false;
+            }
+            if (true) {
+                const unit = 'all';
+                const state = allOff ? 'off' : 'on';
+
+                this.updateProperty(device, room, unit, state);
+            }
+
+            this.updateProperty(device, room, unit.unit, unit.state);
         });
     }
 
@@ -1028,44 +947,57 @@ class rs485 {
                 const evEvent = resLines[1].substring(7);
                 const evInfo = JSON.parse(resLines[2].substring(5));
 
-                if (evInfo.address !== CONFIG.server.address) {
-                    //logger.warn('unable to find information on the elevator for the generation');
-                    return;
+                if (evInfo.address !== Options.server.address) {
+
                 } else {
                     const device = 'elevator';
                     const room = '1';
-                    const state = evEvent === 'arrived' ? 'off' : 'on';
 
-                    this.updateProperty(device, room, 'call', state);
-                }
+                    let name, value;
+                    if (evEvent) {
+                        name = 'direction';
+                        value = EVSTATE[evEvent];
+                        this.updateProperty(device, room, name, value);
+                    }
+                    if (evInfo.move_info) {
+                        name = 'floor';
+                        value = evInfo.move_info.Floor;
+                        this.updateProperty(device, room, name, value);
+                    }
+                    name = 'call';
+                    value = evEvent === 'arrived' ? 'off' : 'on';
 
-                if (evEvent || evEvent == null) {
-                    const device = 'evdirection';
-                    const room = '1';
-
-                    this.updateProperty(device, room, 'event', EVSTATE[evEvent] ?? '대기 층')
-                } if (evInfo.move_info) {
-                    const device = 'evstate';
-                    const room = '1';
-
-                    this.updateProperty(device, room, 'floor', evInfo.move_info.Floor + ' Floor')
+                    this.updateProperty(device, room, name, value);
                 }
             });
         });
 
         req.on('error', error => {
-            log.error(error);
+            logger.error(error);
         });
 
         req.end();
     }
 
+    serverCommand(topic, value, json) {
+        if (topic[1] === 'light') {
+            this.serverLightCommand(topic[3], value, Options.server_type, json);
+        } else if (topic[1] === 'elevator') {
+            const logMessage = 'elevator calls through the server are supported only in v2 version!';
+            Options.server_type === 'v2' ? this.serverEvCommand(json) : logger.warn(logMessage);
+        }
+    }
+
     serverLightCommand(unit, state, type, json) {
         let url;
         if (type === 'v1') {
-            url = this.format(this.reJson(V1LIGHTCMD), json.phpsessid, json.userid, json.username, unit, state);
+            if (unit === 'all') {
+                logger.error('v1 server does not support living room lighting batch');
+                return;
+            }
+            url = this.format(this.JSON(V1LIGHTCMD), json.phpsessid, json.userid, json.username, unit, state);
         } else {
-            url = this.format(this.reJson(V2LIGHTCMD), json.url, unit.slice(-1), unit, state, json['access-token']);
+            url = this.format(this.JSON(V2LIGHTCMD), json.url, unit.slice(-1), unit, state, json['access-token']);
         }
         request(url, (error, response) => {
             if (error) {
@@ -1078,20 +1010,26 @@ class rs485 {
                 return;
             }
             logger.info('server livinglight command request successful!');
-            const device = 'light';
-            const room = 'livingroom';
 
-            if (unit !== 'all') {
-                this.updateProperty(device, room, unit.replace(/switch/g, 'power'), state);
-            } else {
-                for (const i of ['power1', 'power2', 'power3']) {
-                    this.updateProperty(device, room, i, state);
-                }
+            const device = 'light';
+            const room = '0';
+            let allOff = true;
+
+            if (state === 'on') {
+                allOff = false;
             }
+            if (true) {
+                const unit = 'all';
+                const state = allOff ? 'off' : 'on';
+
+                this.updateProperty(device, room, unit, state);
+            }
+
+            this.updateProperty(device, room, unit, state);
         });
     }
 
-    serverEvCommand(state, json) {
+    serverEvCommand(json) {
         const url = this.format(V2ELEVATORCMD, json.url);
         request(url, (error, response) => {
             if (error) {
