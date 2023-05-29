@@ -1,17 +1,12 @@
 const winston = require('winston');
-const CONFIG = require('/data/options.json');
-
-const { file, level } = CONFIG.log;
 const { combine, timestamp, printf } = winston.format;
-
-const logLevel = level || 'silly';
-                        // default
+const { to_file, level } = require('/data/options.json').log
 
 // 로그 출력 포맷
 const format = winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     winston.format.printf(
-        (info) => `${info.timestamp} ${info.level.toUpperCase()}: ${info.message}`,
+        (info) => `${info.timestamp} ${info.level.toUpperCase()}  ${info.message}`,
     ),
 )
 
@@ -25,15 +20,15 @@ const fileTransport = new winston.transports.File({
 
 // 로그 레벨별 설정
 const logger = winston.createLogger({
-    level: logLevel,
+    level: level,
     format: combine(timestamp(), format),
     transports: [
         new winston.transports.Console(),
     ],
 });
 
-// log_file이 true일 때 파일 저장 설정 추가
-if (file) {
+// to_file이 true일 때 파일 저장 설정 추가
+if (to_file) {
     logger.add(fileTransport);
 }
 
